@@ -1,9 +1,10 @@
 import { startServerAndCreateNextHandler } from "@as-integrations/next";
+import { NextRequest, NextResponse } from "next/server";
 import { ApolloServer } from "@apollo/server";
-import { NextRequest } from "next/server";
 import { gql } from "graphql-tag";
 import prismaclient from "@/service/prisma";
-import Friends from "@/components/Friends";
+import { AcceptRequestArgs, FetchMsgArgs, FindUserArgs, FriendRequestArgs, FriendsListArgs, GetUserArgs, UserRequestsArgs } from "./type";
+
 
 const typeDefs = gql`
  
@@ -74,7 +75,7 @@ roomid: String
 
 const resolvers = {
   Query: {
-    userRequests: async (_:any,args:any) => {
+    userRequests: async (_:unknown,args: UserRequestsArgs) => {
         return await prismaclient.requestTable.findMany({
             where:{
                 receiverid:args.userId
@@ -85,7 +86,7 @@ const resolvers = {
             }
         })
     },
-    friendsList: async (_:any,args:any)=>{
+    friendsList: async (_:unknown,args: FriendsListArgs)=>{
         const friends= await prismaclient.friends.findMany({
             where:{
                 userId:args.userId
@@ -95,7 +96,7 @@ const resolvers = {
             }
         })
         const resp=await Promise.all(
-            friends.map(async (f:any)=>{
+            friends.map(async (f)=>{
                 const lastmsg=await prismaclient.messages.findFirst({
                     where:{
                         OR:[
@@ -113,7 +114,7 @@ const resolvers = {
         )
         return resp
     },
-    finduser: async (_:any,args:any)=>{
+    finduser: async (_:unknown,args: FindUserArgs)=>{
        const users=await prismaclient.user.findMany({
         where:{
             AND:[
@@ -150,14 +151,14 @@ const resolvers = {
   }));
 
     },
-    getuser: async (_:any,args:any)=>{
+    getuser: async (_:unknown,args: GetUserArgs)=>{
         return await prismaclient.user.findUnique({
             where:{
                 clerkId:args.id
             }
         })
     },
-    fetchmsg:async (_:any,args:any)=>{
+    fetchmsg:async (_:unknown,args: FetchMsgArgs)=>{
         return await prismaclient.messages.findMany({
             where:{
                 roomid:args.roomid
@@ -166,7 +167,7 @@ const resolvers = {
     }
   },
   Mutation:{
-    friendRequest: async (_:any,args:any)=>{
+    friendRequest: async (_:unknown,args: FriendRequestArgs)=>{
         await prismaclient.requestTable.create({
             data:{
                 senderid:args.senderid,
@@ -176,7 +177,7 @@ const resolvers = {
         })
         return true;
     },
-    AcceptRequest: async (_:any,args:any)=>{
+    AcceptRequest: async (_:unknown, args: AcceptRequestArgs)=>{
        const request=await prismaclient.requestTable.findUnique({
         where:{
             id:args.requestid
@@ -214,7 +215,16 @@ const server = new ApolloServer({
 
 // Typescript: req has the type NextRequest
 const handler = startServerAndCreateNextHandler<NextRequest>(server, {
-    context: async req => ({ req }),
+  context: async (req) => ({ req }),
 });
 
-export { handler as GET, handler as POST }; 
+// App Router expects: (req: NextRequest) => Response | Promise<Response>
+export async function GET(req: NextRequest) {
+  await handler(req); // Apollo sends response internally
+  return new Response(); // Dummy response just for TS
+}
+
+export async function POST(req: NextRequest) {
+  await handler(req);
+  return new Response();
+} 

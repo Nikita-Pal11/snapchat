@@ -12,9 +12,20 @@ import socket from '../services/socket';
 import { useCurrUser } from '@/components/UserContext';
 import UserComp from '@/components/Usercomp';
 import { useRouter } from 'next/navigation';
+
+type FriendUser = {
+  id: string;
+  name: string;
+  email: string | null;
+  avatar: string | null;
+  isFriend: boolean;
+  requestSent: boolean;
+  requestReceived: boolean;
+};
+
 export default function Page() {
   const [name, setName] = useState("");
-  const [friends, setFriends] = useState<any[]>([]);
+  const [friends, setFriends] = useState<FriendUser[]>([]);
   const [loading, setLoading] = useState(false);
   const router=useRouter();
   const {curruser}=useCurrUser();
@@ -116,7 +127,7 @@ export default function Page() {
     >
       <UserComp
         name={val.name}
-        avatar={val.avatar}
+        avatar={val.avatar || ""}
         subtitle={val.email}
 showAdd={!val.isFriend && !val.requestSent && !val.requestReceived}
   showAccept={val.requestReceived}

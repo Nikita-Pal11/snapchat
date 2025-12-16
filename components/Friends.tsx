@@ -10,30 +10,61 @@ import { useRouter } from "next/navigation";
 import SubtitleComp from "./SubtitleComp";
 import socket from "@/app/services/socket";
 import { ArrowRight, MessageCircle, Square, X } from "lucide-react";
+import { Friends as userFriend, User } from "@prisma/client";
 
+type LastMessage = {
+  id: string;
+  roomid: string;
+  type: "TEXT" | "SNAP" | "IMAGE" | "VIDEO";
+  senderid: string;
+  receiverid: string;
+  mediaurl?: string | null;
+  isopened: boolean;
+  createdAt: string;
+  updatedAt: string;
+};
 
+type FriendListItem = userFriend & {
+  friend: User;
+  lastmsg?: LastMessage;
+};
 
 function Friends() {
-  const[friendlist,setfriendlist]=useState<any[]>([]);
+  const[friendlist,setfriendlist]=useState<FriendListItem[]>([]);
   const[loading,setloading]=useState(false);
   const{curruser}=useCurrUser();
-  const[opensnap,setopensnap]=useState<any>(null);
-  function openSnap(val:any){
-    if(!val.lastmsg.id || !val.lastmsg.roomid)return;
-    if (val.lastmsg.isopened)return;
-     setfriendlist((prev) =>
-    prev?.map((f) =>
-      f.lastmsg?.id === val.lastmsg.id
-        ? { ...f, lastmsg: { ...f.lastmsg, isopened: true } }
-        : f
-    )
+  const[opensnap,setopensnap]=useState<FriendListItem | null>(null);
+ function openSnap(val: FriendListItem) {
+  const lastmsg = val.lastmsg;
+  if (!lastmsg?.id || !lastmsg.roomid) return;
+  if (lastmsg.isopened) return;
+
+  setfriendlist((prev) =>
+    prev.map((f) => {
+      if (f.lastmsg?.id === lastmsg.id) {
+        return {
+          ...f,
+          lastmsg: {
+            ...f.lastmsg,
+            id: f.lastmsg.id!,       
+            roomid: f.lastmsg.roomid!,
+            isopened: true
+          }
+        };
+      }
+      return f;
+    })
   );
-    setopensnap(val);
-    setTimeout(() => {
-      setopensnap(null)
-    },3000);
-    socket.emit("open_snap",{mid:val.lastmsg.id,roomid:val.lastmsg.roomid})
-  }
+
+  setopensnap(val);
+
+  setTimeout(() => {
+    setopensnap(null);
+  }, 3000);
+
+  socket.emit("open_snap", { mid: lastmsg.id, roomid: lastmsg.roomid });
+}
+
   useEffect(() => {
   socket.on("rec_snap", ({ resp }) => {
     setfriendlist((prev) =>
@@ -155,8 +186,8 @@ function formatTime(date?: string) {
       transition={{ duration: 0.25 }}
     >
       <UserComp
-        name={val.friend.name}
-        avatar={val.friend.avatar}
+        name={val.friend.name || ""}
+        avatar={val.friend.avatar || ""}
    subtitle={
   <div className="flex items-center justify-between w-full">
 
@@ -243,10 +274,10 @@ function formatTime(date?: string) {
           <div className="fixed inset-0 bg-black z-50 flex items-center justify-center">
             <div className="absolute top-0 left-0 h-1 w-full bg-white animate-snap-timer" />
 
-            {opensnap.lastmsg.mediaurl?.endsWith(".mp4") ? (
+            {opensnap.lastmsg?.mediaurl?.endsWith(".mp4") ? (
               <video src={opensnap.lastmsg.mediaurl} autoPlay className="max-h-full" />
             ) : (
-              <img src={opensnap.lastmsg.mediaurl} className="max-h-full" />
+              <img src={opensnap.lastmsg?.mediaurl || ""} className="max-h-full" />
             )}
 
             <button

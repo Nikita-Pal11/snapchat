@@ -7,8 +7,13 @@ import UserComp from "@/components/Usercomp";
 import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import { ACCEPT_REQUEST } from "@/service/gql/mutation";
+import { RequestTable, User } from "@prisma/client";
+type RequestWithUsers = RequestTable & {
+  sender: User;
+  receiver: User;
+};
 function page() {
-    const[allrequests,setrequests]=useState<any[]>();
+    const[allrequests,setrequests]=useState<RequestWithUsers[]>();
     const[loading,setLoading]=useState(false);
     const{curruser}=useCurrUser();
  async function acceptRequest(reqid:string){
@@ -71,8 +76,8 @@ function page() {
       transition={{ duration: 0.25 }}
     >
       <UserComp
-        name={val.sender.name}
-        avatar={val.sender.avatar}
+        name={val.sender.name || ""}
+        avatar={val.sender.avatar || ""}
         subtitle={val.sender.email}
         showAccept
         onAccept={()=>{acceptRequest(val.id)}}
