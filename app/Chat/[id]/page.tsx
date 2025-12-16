@@ -10,7 +10,7 @@ import {
   Clock,
 } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { useEffect, useMemo, useState } from "react";
+import { use, useEffect, useMemo, useState } from "react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useCurrUser } from "@/components/UserContext";
 import gqlclient from "@/service/gql";
@@ -43,10 +43,15 @@ interface PageProps {
   params: { id: string };
 }
 
-export default function Page({ params }: PageProps) {
+export default function Page({
+  params,
+}: {
+  params: Promise<{ id: string }>;
+}) {
+  const { id } = use(params);
   const router = useRouter();
   const { curruser } = useCurrUser();
-  const { id } = params;
+
 
   const [message, setMessage] = useState<string>("");
   const [msgs, setMsgs] = useState<Message[]>([]);

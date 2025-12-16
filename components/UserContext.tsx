@@ -17,7 +17,7 @@ export function UserContext({children}:{children:ReactNode}) {
     const[curruser,setcurruser]=useState(null);
     const[loading,setLoading]=useState(true);
     useEffect(()=>{
-        if(!user)return
+        if (!user?.id) return;
          async function fetchUser() {
       try {
         setLoading(true);

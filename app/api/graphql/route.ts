@@ -218,13 +218,11 @@ const handler = startServerAndCreateNextHandler<NextRequest>(server, {
   context: async (req) => ({ req }),
 });
 
-// App Router expects: (req: NextRequest) => Response | Promise<Response>
 export async function GET(req: NextRequest) {
-  await handler(req); // Apollo sends response internally
-  return new Response(); // Dummy response just for TS
+  return handler(req);
 }
 
 export async function POST(req: NextRequest) {
-  await handler(req);
-  return new Response();
-} 
+  return handler(req);
+}
+ 
