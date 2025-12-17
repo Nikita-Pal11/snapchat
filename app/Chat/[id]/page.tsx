@@ -191,6 +191,13 @@ export default function Page({
         type: "TEXT",
       },
     });
+    socket.emit("sent_notification",{
+      senderid: curruser!.id,
+        receiverid: user!.id,
+        roomid,
+        type:"CHAT",
+        message:"Sent a CHAT"
+    })
 
     setMessage("");
   }
@@ -222,6 +229,13 @@ export default function Page({
         type: "SNAP" as MsgType,
       },
     });
+    socket.emit("sent_notification",{
+      senderid: curruser!.id,
+        receiverid: user!.id,
+        roomid,
+        type:"SNAP",
+        message:"Sent a snap"
+    })
   }
 
   // ------------------- MEDIA UPLOAD -------------------
@@ -251,6 +265,13 @@ export default function Page({
         type: type === "image" ? "IMAGE" : "VIDEO",
       } as Message,
     });
+    socket.emit("sent_notification",{
+      senderid: curruser!.id,
+        receiverid: user!.id,
+        roomid,
+        type:"CHAT",
+        message:"Sent a chat"
+    })
   }
 
   // ------------------- RENDER -------------------
@@ -298,7 +319,7 @@ export default function Page({
 
                 <div className={`flex ${isMe ? "justify-end" : "justify-start"}`}>
                   <div className="max-w-[75%]">
-                    {/* TEXT */}
+                  
                     {m.type === "TEXT" && (
                       <div
                         className={`px-4 py-2 rounded-2xl text-sm leading-snug ${
@@ -311,7 +332,7 @@ export default function Page({
                       </div>
                     )}
 
-                    {/* IMAGE */}
+                   
                     {m.type === "IMAGE" && (
                       <img
                         src={m.mediaurl}
@@ -320,7 +341,7 @@ export default function Page({
                       />
                     )}
 
-                    {/* VIDEO */}
+                   
                     {m.type === "VIDEO" && (
                       <video
                         src={m.mediaurl}
@@ -329,10 +350,10 @@ export default function Page({
                       />
                     )}
 
-                    {/* SNAP */}
+                  
                     {m.type === "SNAP" && (
                       <button
-                        disabled={m.isopened}
+                        disabled={m.isopened || m.senderid === curruser?.id}
                         onClick={() => openSnapMessage(m)}
                         className={`flex items-center gap-2 px-4 py-3 rounded-2xl text-sm border w-fit ${
                           m.isopened

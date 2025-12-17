@@ -3,7 +3,9 @@
 export interface UserRequestsArgs {
   userId: string;
 }
-
+export interface fetchnotify {
+  userId: string;
+}
 export interface FriendsListArgs {
   userId: string;
 }
@@ -30,3 +32,6 @@ export interface FriendRequestArgs {
 export interface AcceptRequestArgs {
   requestid: string;
 }
+export interface ReadNotificationArgs {
+  id: string;
+};

@@ -6,16 +6,21 @@ import { useUser } from "@clerk/nextjs"
 import { createContext, ReactNode, useContext, useEffect, useState } from "react";
 type UserContextType={
     curruser:any|null,
-    loading:boolean
+    loading:boolean,
+    notificationlength: number;
+  setnotificationlength: React.Dispatch<React.SetStateAction<number>>;
 }
 const usercontext=createContext<UserContextType>({
     curruser:null,
-    loading:true
+    loading:true,
+    notificationlength:0,
+    setnotificationlength:()=>{}
 });
 export function UserContext({children}:{children:ReactNode}) {
     const {user}=useUser();
     const[curruser,setcurruser]=useState(null);
     const[loading,setLoading]=useState(true);
+    const[notificationlength,setnotificationlength]=useState(0);
     useEffect(()=>{
         if (!user?.id) return;
          async function fetchUser() {
@@ -35,9 +40,10 @@ export function UserContext({children}:{children:ReactNode}) {
 
     fetchUser();
     },[user])
+
   return (
    
-      <usercontext.Provider value={{curruser,loading}}>
+      <usercontext.Provider value={{curruser,loading,notificationlength,setnotificationlength}}>
         {children}
       </usercontext.Provider>
 

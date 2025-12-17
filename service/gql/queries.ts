@@ -83,3 +83,23 @@ query Fetchmsg($roomid: String!) {
   }
 }
 `
+
+export const FETCH_NOTIFICATION=gql`
+query Fetchnotification($userId: String!) {
+  fetchnotification(userId: $userId) {
+    id
+    senderid
+    receiverid
+    roomid
+    message
+    isopened
+    sender {
+      name
+      avatar
+      id
+    }
+    type
+    createdAt
+  }
+}
+`

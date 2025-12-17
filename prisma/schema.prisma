@@ -26,6 +26,8 @@ model User {
   friendOf  Friends[]      @relation("User_Friends_asFriend")
   sentRequests     RequestTable[] @relation("SenderRequests")
   receivedRequests RequestTable[] @relation("ReceiverRequests")
+notificationsSent     Notifications[] @relation("NotificationsSent")
+notificationsReceived Notifications[] @relation("NotificationsReceived")
 }
 
 model Friends{
@@ -73,4 +75,24 @@ enum msgtype{
   SNAP
   IMAGE
   VIDEO
+}
+
+model Notifications{
+  id String @id @default(auto()) @map("_id") @db.ObjectId
+   senderid String @db.ObjectId
+  receiverid String @db.ObjectId
+  roomid String?
+  message String?
+  messageid String?
+  isopened Boolean @default(false)
+  sender User @relation("NotificationsSent",fields: [senderid],references: [id])
+  receiver User @relation("NotificationsReceived",fields: [receiverid],references: [id])
+  createdAt DateTime @default(now())
+  type notifyType
+}
+
+enum notifyType{
+  FRIEND_REQUEST
+  SNAP
+  CHAT
 }

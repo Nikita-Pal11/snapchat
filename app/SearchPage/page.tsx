@@ -37,9 +37,11 @@ export default function Page() {
         receiverid:recid
        })
        if(resp.friendRequest){
-        socket.emit("friend_request",{
+        socket.emit("sent_notification",{
           senderid:curruser?.id,
-          receiverid:recid
+          receiverid:recid,
+          type:"FRIEND_REQUEST",
+          message:"Send a Friend request"
         })
 
         setFriends(prev =>

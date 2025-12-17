@@ -153,16 +153,37 @@ io.on("connection",(socket)=>{
   }, delay);
        
    })
-    socket.on("friend_request",({senderid,receiverid})=>{
-        console.log(`friend request from ${senderid} to ${receiverid}`);
-        const recsocket=onlineusers[receiverid];
-        if(recsocket){
-            io.to(recsocket).emit("Notification",{
-                type:"friend_request",
-                from:senderid,
-                msg:"You have a new friend request"
-            })
-        }
+    socket.on("sent_notification",async (msg)=>{
+       const resp =await prismaclient.notifications.create({
+            data:msg
+          })
+           const receiver=await prismaclient.user.findUnique({
+          where :{
+            id:msg.receiverid
+          }
+        })
+        if(!receiver)return;
+        const recsocketid=onlineusers[receiver.clerkId];
+        const sender = await prismaclient.user.findUnique({
+    where: { id: msg.senderid },
+    select: {
+      id: true,
+      name: true,
+      avatar: true,
+    },
+  });
+          if (!recsocketid || !sender) return;
+       if (recsocketid && resp) {
+        io.to(recsocketid).emit("new_notification",resp)
+    io.to(recsocketid).emit("rec_notification", {
+      resp: {
+        ...resp,
+        sender, 
+      },
+    });
+  }
+        
+       
     })
     
 })

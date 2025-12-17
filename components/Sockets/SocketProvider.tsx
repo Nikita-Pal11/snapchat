@@ -1,28 +1,100 @@
 "use client";
 
+import UseSound from "@/app/hooks/UseSound";
 import socket from "@/app/services/socket";
 import { useUser } from "@clerk/nextjs";
 import { useEffect, useRef } from "react";
 import { toast } from "sonner";
+import { useRouter } from "next/navigation";
+type NotificationType = "CHAT" | "SNAP" | "FRIEND_REQUEST"
+type SocketNotification = {
+  type: NotificationType
+  message: string
+  roomid:string
+  sender: {
+    id: string
+    name: string
+    avatar?: string | null
+  }
+}
 
 function SocketProvider() {
   const { isSignedIn, user } = useUser();
  const connectedRef = useRef(false);
-  //notification
+  const playSound = UseSound();
+  const router = useRouter();
+  const snapStyle: Record<NotificationType, { title: string; color: string }> = {
+  CHAT: {
+    title: "New Chat 💬",
+    color: "bg-purple-500",
+  },
+  SNAP: {
+    title: "New Snap 🔥",
+    color: "bg-red-500",
+  },
+  FRIEND_REQUEST: {
+    title: "Friend Request 👋",
+    color: "bg-blue-500",
+  },
+}
+
+
+  //NOTIFICATION
   useEffect(() => {
-  function handleNotification(data:{type:string,from:string,msg:string}) {
-    console.log("NOTIFICATION:", data);
+  const handleNotification = ({ resp }: { resp: SocketNotification }) => {
+  if (!resp) return
+  console.log(resp);
+  playSound()
 
-    
-    toast.success(`${data.msg}`)
-  }
+  const config = snapStyle[resp.type]
 
-  socket.on("Notification", handleNotification);
+  toast(
+    <div
+     onClick={() => {
+      if (resp.type === "CHAT" || resp.type === "SNAP") {
+        router.push(`/chat/${resp.roomid}`);
+      }
+      if (resp.type === "FRIEND_REQUEST") {
+        router.push("/Requests");
+      }
+    }}
+      className={`flex items-center gap-3 text-white px-3 py-2 rounded-lg shadow-lg ${config.color}`}
+    >
+      {/* Avatar */}
+      <div className="h-9 w-9 rounded-full bg-black/20 flex items-center justify-center text-sm font-semibold">
+        {resp.sender?.name?.[0]?.toUpperCase() || "U"}
+      </div>
 
-  return () => {
-    socket.off("Notification", handleNotification)
-  };
-}, []);
+      {/* Text */}
+      <div className="flex flex-col leading-tight">
+        <span className="text-xs opacity-80">
+          {resp.sender?.name}
+        </span>
+
+        <span className="text-sm font-semibold">
+          {config.title}
+        </span>
+
+        <span className="text-xs opacity-90">
+          {resp.message}
+        </span>
+      </div>
+    </div>,
+    {
+      duration: 4500,   // ⏱️ increased duration
+      unstyled: true,
+    }
+  )
+}
+
+
+
+    socket.on("rec_notification", handleNotification);
+
+    return () => {
+      socket.off("rec_notification", handleNotification);
+    };
+  }, [playSound]);
 
   // CONNECT + USER ONLINE (AFTER LOGIN)
    useEffect(() => {

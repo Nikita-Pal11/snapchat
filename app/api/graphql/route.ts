@@ -3,7 +3,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { ApolloServer } from "@apollo/server";
 import { gql } from "graphql-tag";
 import prismaclient from "@/service/prisma";
-import { AcceptRequestArgs, FetchMsgArgs, FindUserArgs, FriendRequestArgs, FriendsListArgs, GetUserArgs, UserRequestsArgs } from "./type";
+import { AcceptRequestArgs, FetchMsgArgs, fetchnotify, FindUserArgs, FriendRequestArgs, FriendsListArgs, GetUserArgs, ReadNotificationArgs, UserRequestsArgs } from "./type";
 
 
 const typeDefs = gql`
@@ -14,11 +14,29 @@ const typeDefs = gql`
     finduser(name:String!,userid:String!):[User]
     getuser(id:String!):User
     fetchmsg(roomid:String!):[messages]
+    fetchnotification(userId:String!):[notification]
   }
   type Mutation {
   friendRequest(senderid:String!,receiverid:String!,status:String):Boolean
   AcceptRequest(requestid:String!):Boolean
+  readNotification(id:String!):Boolean
   }
+  type notification{
+  id:String
+  senderid:String
+      receiverid:String
+      roomid:String
+      message :String
+  isopened: Boolean 
+  sender:User
+  type:notifyType
+  createdAt:String
+  }
+  enum notifyType{
+  FRIEND_REQUEST
+  SNAP
+  CHAT
+}
   type  RequestTable {
       id:String
       senderid:String
@@ -164,6 +182,20 @@ const resolvers = {
                 roomid:args.roomid
             }
         })
+    },
+    fetchnotification:async (_:unknown,args:fetchnotify)=>{
+        return await prismaclient.notifications.findMany({
+            where:{
+                receiverid:args.userId
+            },
+            include:{
+                sender:true
+            },
+             orderBy: [
+      { isopened: "asc" },     
+      { createdAt: "desc" },   
+    ],
+        })
     }
   },
   Mutation:{
@@ -204,7 +236,19 @@ const resolvers = {
         })
        ])
        return true;
-    }
+    },
+    readNotification: async (_: unknown, args: ReadNotificationArgs) => {
+  await prismaclient.notifications.update({
+    where: {
+      id: args.id,
+    },
+    data: {
+      isopened: true, 
+    },
+  });
+
+  return true; 
+}
   }
 };
 

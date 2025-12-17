@@ -1,9 +1,11 @@
-import React from "react";
+'use client'
 import { SignedIn, UserButton } from "@clerk/nextjs";
-import { Search, UserRoundPlus, CircleEllipsis } from "lucide-react";
+import { Search, UserRoundPlus, CircleEllipsis, BellRing } from "lucide-react";
 import Link from "next/link";
+import { useCurrUser } from "./UserContext";
 
 function Navbar() {
+  const {curruser,notificationlength}=useCurrUser()
   return (
     <div className="
       w-full 
@@ -38,9 +40,20 @@ function Navbar() {
         <Link href="/Requests">
           <UserRoundPlus className="text-white" size={26} />
         </Link>
-        <button>
-          <CircleEllipsis className="text-white" size={26} />
-        </button>
+        <Link href="/notifications" className="relative inline-flex items-center">
+  {/* Bell */}
+  <BellRing size={26} className="text-white" />
+
+  {/* Notification Badge */}
+  {notificationlength > 0 && (
+    <span className="absolute -top-1 -right-1 min-w-[16px] h-4 px-1 
+                     flex items-center justify-center
+                     bg-yellow-400 text-black text-[10px] font-bold 
+                     rounded-full">
+      {notificationlength}
+    </span>
+  )}
+</Link>
       </div>
     </div>
   );
