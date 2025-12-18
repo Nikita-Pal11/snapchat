@@ -35,24 +35,18 @@ export default function Page() {
   const { curruser } = useCurrUser();
   const router = useRouter();
 
-  async function acceptRequest(reqid: string) {
-    try {
-      const resp = await gqlclient.request(ACCEPT_REQUEST, {
-        requestid: reqid,
-      });
-      if (resp.AcceptRequest) {
-        setrequests((prev) => prev.filter((r) => r.id !== reqid));
-      }
-       socket.emit("sent_notification",{
-      senderid: curruser!.id,
-        receiverid: reqid,
-        type:"REQUEST_ACCEPTED",
-        message:"Accept your request"
-    })
-    } catch (err) {
-      console.log(err);
-    }
-  }
+ async function acceptRequest(requestId: string, senderUserId: string) {
+  await gqlclient.request(ACCEPT_REQUEST, {
+    requestid: requestId,
+  });
+
+  socket.emit("sent_notification", {
+    senderid: curruser!.id,      
+    receiverid: senderUserId,    
+    type: "REQUEST_ACCEPTED",
+    message: "Accepted your friend request",
+  });
+}
 
   useEffect(() => {
     if (!curruser) return;
@@ -162,7 +156,7 @@ export default function Page() {
                   </div>
 
                   <button
-                    onClick={() => acceptRequest(val.senderid)}
+                    onClick={() => acceptRequest(val.id, val.senderid)}
                     className="bg-yellow-400 text-black text-xs font-semibold px-4 py-1.5 rounded-full active:scale-95 transition"
                   >
                     Accept
