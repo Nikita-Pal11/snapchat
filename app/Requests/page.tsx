@@ -59,8 +59,8 @@ export default function Page() {
   const visibleRequests=showAll?allrequests:allrequests.slice(0,2);
 
   return (
-  <div className="w-full h-screen text-white flex justify-center bg-black">
-    <div className="w-full max-w-[420px] flex flex-col">
+  <div className="w-full h-screen text-white flex justify-center ">
+    <div className="w-full max-w-[420px] bg-black flex flex-col">
 
       {/* Header */}
       <div className="flex items-center gap-3 px-4 py-4 border-b border-white/10">
