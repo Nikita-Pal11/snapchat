@@ -10,9 +10,11 @@ import { ACCEPT_REQUEST } from "@/service/gql/mutation";
 import { ArrowLeft } from "lucide-react";
 import { useRouter } from "next/navigation";
 import SnapchatUser from "@/components/SnapchatUser";
+import socket from "../services/socket";
 
 type ClientUser = {
   id: string;
+  
   name: string | null;
   email: string;
   avatar: string | null;
@@ -20,6 +22,7 @@ type ClientUser = {
 
 type ClientRequest = {
   id: string;
+  senderid:string;
   sender: ClientUser;
   receiver: ClientUser;
 };
@@ -40,6 +43,12 @@ export default function Page() {
       if (resp.AcceptRequest) {
         setrequests((prev) => prev.filter((r) => r.id !== reqid));
       }
+       socket.emit("sent_notification",{
+      senderid: curruser!.id,
+        receiverid: reqid,
+        type:"REQUEST_ACCEPTED",
+        message:"Accept your request"
+    })
     } catch (err) {
       console.log(err);
     }
@@ -153,7 +162,7 @@ export default function Page() {
                   </div>
 
                   <button
-                    onClick={() => acceptRequest(val.id)}
+                    onClick={() => acceptRequest(val.senderid)}
                     className="bg-yellow-400 text-black text-xs font-semibold px-4 py-1.5 rounded-full active:scale-95 transition"
                   >
                     Accept

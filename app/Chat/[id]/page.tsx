@@ -398,6 +398,7 @@ export default function Page({
               />
               <button
                 onClick={sendMessage}
+                onKeyDown={(e) => e.key === "Enter" && sendMessage()}
                 disabled={!message}
                 className="ml-2 w-8 h-8 rounded-full bg-[#FFFC00] text-black flex items-center justify-center disabled:opacity-40"
               >

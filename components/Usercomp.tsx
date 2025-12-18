@@ -1,61 +1,145 @@
 import { MessageSquare, UserPlus } from "lucide-react";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
-type usercompprops={
-  name:string,
-  avatar?:string,
+
+type LastMessage = {
+  id: string;
+  type: "TEXT" | "SNAP" | "IMAGE" | "VIDEO";
+  senderid: string;
+  receiverid: string;
+  mediaurl?: string;
+  isopened: boolean;
+  createdAt: string;
+  updatedAt: string;
+};
+
+type usercompprops = {
+  name: string;
+  avatar?: string;
   subtitle?: React.ReactNode;
-  showChat?:boolean,
-  showAdd?:boolean,
-  showAccept?:boolean,
-  onChat?:()=>void,
-  onAdd?:()=>void,
-  onAccept?:()=>void,
-}
-export default function UserComp({name,avatar,subtitle,showChat,showAdd,showAccept,onChat,onAdd,onAccept}:usercompprops) {
+  streaks?: number;
+  lastmsg?: LastMessage;
+  showChat?: boolean;
+  showAdd?: boolean;
+  showAccept?: boolean;
+  onChat?: () => void;
+  onAdd?: () => void;
+  onAccept?: () => void;
+};
+
+export default function UserComp({
+  name,
+  avatar,
+  subtitle,
+  streaks = 0,
+  lastmsg,
+  showChat,
+  showAdd,
+  showAccept,
+  onChat,
+  onAdd,
+  onAccept,
+}: usercompprops) {
   return (
-    <div className="
-      w-full 
-      max-w-[420px] 
-      h-[90px] 
-      mx-auto
-      px-4 
-      flex 
-      items-center 
-      bg-black 
-      text-white
-      border-b border-white/10
-    ">
+    <div
+      className="
+        w-full max-w-[420px] h-[90px] mx-auto px-4 flex items-center
+        bg-black text-white border-b border-white/10 rounded-xl
+        hover:bg-white/5 transition-colors duration-200 cursor-pointer
+      "
+      onClick={onChat}
+    >
       {/* Avatar */}
       <Avatar className="w-14 h-14 ring-2 ring-white/20">
-        <AvatarImage src={avatar} alt="user" />
+        <AvatarImage src={avatar} alt={name} />
         <AvatarFallback>U</AvatarFallback>
       </Avatar>
 
       {/* Middle Content */}
-      <div className="ml-4 flex flex-col justify-center">
-        <h1 className="font-semibold text-lg">{name}</h1>
+      <div className="ml-4 flex flex-col justify-center flex-1 min-w-0">
+        <h1 className="font-semibold text-lg truncate">{name}</h1>
 
-        {subtitle && (
-          <div className="text-sm truncate">
-            {subtitle}
+        <div className="flex items-center justify-between gap-2 mt-1">
+          {/* Subtitle */}
+          <div className="text-sm text-white/60 truncate">{subtitle}</div>
+
+          {/* Time & Streak */}
+          <div className="flex items-center gap-1 text-white/40 text-xs shrink-0">
+            {lastmsg && (
+              <span>
+                {lastmsg.isopened
+                  ? formatTime(lastmsg.updatedAt)
+                  : formatTime(lastmsg.createdAt)}
+              </span>
+            )}
+            {streaks > 0 && <span>·</span>}
+            {streaks > 0 && (
+              <span className="flex items-center gap-0.5 text-orange-400 font-medium">
+                {streaks}
+                <span>🔥</span>
+              </span>
+            )}
           </div>
-        )}
-        
+        </div>
       </div>
 
-      {/* Right Icon */}
-      <div className="flex ml-auto gap-3">
- 
-       {showChat &&  <MessageSquare className="text-white" size={26} onClick={onChat}/>}
-       {showAdd &&<button className='flex gap-2 h-[30px] w-[100px] p-2 rounded-2xl bg-[#FFFC00] items-center justify-center' onClick={onAdd}>
-                  <UserPlus size={18} className="text-black" />
-                <p className='text-black'>Add</p>
-                </button> }
-       {showAccept && <button className='flex gap-2 h-[30px] w-[100px] p-2 rounded-2xl bg-[#FFFC00] items-center justify-center' onClick={onAccept}>
-                  <UserPlus size={18} className="text-black" />
-                <p className='text-black'>Accept</p>
-                </button>}
+      {/* Right Icons */}
+      <div className="flex items-center gap-2 ml-2">
+        {showChat && (
+          <MessageSquare
+            className="text-white hover:text-yellow-400 transition-colors"
+            size={22}
+            onClick={(e) => {
+              e.stopPropagation();
+              onChat?.();
+            }}
+          />
+        )}
+        {showAdd && (
+          <button
+            className="
+              flex gap-1 h-7 px-3 rounded-2xl bg-yellow-500
+              items-center justify-center text-black font-semibold
+              hover:bg-yellow-400 transition-colors
+            "
+            onClick={(e) => {
+              e.stopPropagation();
+              onAdd?.();
+            }}
+          >
+            <UserPlus size={16} />
+            Add
+          </button>
+        )}
+        {showAccept && (
+          <button
+            className="
+              flex gap-1 h-7 px-3 rounded-2xl bg-yellow-500
+              items-center justify-center text-black font-semibold
+              hover:bg-yellow-400 transition-colors
+            "
+            onClick={(e) => {
+              e.stopPropagation();
+              onAccept?.();
+            }}
+          >
+            <UserPlus size={16} />
+            Accept
+          </button>
+        )}
       </div>
     </div>
   );
+}
+
+// Helper function
+function formatTime(date?: string) {
+  if (!date) return "";
+  const time = new Date(date).getTime();
+  const diff = Date.now() - time;
+  const mins = Math.floor(diff / 60000);
+  if (mins < 1) return "now";
+  if (mins < 60) return `${mins}m`;
+  const hrs = Math.floor(mins / 60);
+  if (hrs < 24) return `${hrs}h`;
+  return `${Math.floor(hrs / 24)}d`;
 }

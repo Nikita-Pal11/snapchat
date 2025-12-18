@@ -191,9 +191,34 @@ function formatTime(date?: string) {
   </div>
 )}
 
-  {!loading && friendlist?.length === 0 &&  (
-    <p className="text-center text-white/40 py-4">Add Friends to chat.</p>
-  )}
+{!loading && friendlist?.length === 0 && (
+  <div className="flex flex-col items-center justify-center py-12 text-white/60 gap-3">
+    <p className="text-lg font-bold">You have no friends yet!</p>
+    <p className="text-sm text-white/40 text-center">
+      Find and add friends to start chatting instantly!
+    </p>
+    <button
+  onClick={() => router.push("/SearchPage")}
+  className="
+    px-6 py-2
+    bg-yellow-500
+    hover:bg-yellow-400
+    rounded-lg
+    text-black font-semibold
+    shadow-md
+    transform hover:scale-105 active:scale-95
+    transition-all duration-200 ease-in-out
+    flex items-center gap-2
+  "
+>
+  <span>Add Friends</span>
+  <ArrowRight size={16} />
+</button>
+
+  </div>
+)}
+
+
 
   {friendlist?.map((val) => (
     <motion.div
@@ -206,7 +231,9 @@ function formatTime(date?: string) {
         name={val.friend.name || ""}
         avatar={val.friend.avatar || ""}
    subtitle={
-  <div className="flex items-center justify-between w-full">
+  <div className="flex items-center justify-between w-full"
+  
+  >
 
     {/* LEFT — STATUS */}
     <div className="flex items-center gap-1">
@@ -216,7 +243,10 @@ function formatTime(date?: string) {
       val.lastmsg.senderid !== curruser.id &&
       !val.lastmsg.isopened ? (
         <span
-          onClick={() => openSnap(val)}
+        
+          onClick={(e) => {
+             e.stopPropagation();
+            openSnap(val)}}
           className="flex items-center gap-1 text-red-500 text-sm font-semibold cursor-pointer"
         >
           <Square size={12} fill="currentColor" />
@@ -227,7 +257,7 @@ function formatTime(date?: string) {
           {/* ◻️ OPENED */}
           {val.lastmsg?.type === "SNAP" &&
           val.lastmsg.isopened && (
-            <span className="flex items-center gap-1 text-white/50 text-sm">
+            <span className="flex items-center gap-1 text-white/50 text-sm" >
               <Square size={12} />
               Opened
             </span>
@@ -236,7 +266,7 @@ function formatTime(date?: string) {
           {/* ➡️ DELIVERED */}
           {val.lastmsg?.type === "SNAP" &&
           !val.lastmsg.isopened && (
-            <span className="flex items-center gap-1 text-white/50 text-sm">
+            <span className="flex items-center gap-1 text-white/50 text-sm" >
               <ArrowRight size={12} />
               Delivered
             </span>
@@ -244,7 +274,7 @@ function formatTime(date?: string) {
 
           {/* 🔵 CHAT */}
           {val.lastmsg?.type !== "SNAP" && (
-            <span className="flex items-center gap-1 text-blue-500 text-sm font-medium">
+            <span className="flex items-center gap-1 text-blue-500 text-sm font-medium" >
               <MessageCircle size={12} />
               Chat
             </span>

@@ -13,74 +13,20 @@ import { READ_NOTICN } from '@/service/gql/mutation'
 import socket from '../services/socket'
 type ClientUser = {
   id: string
+  clerkId:string
   name: string | null
   email?: string
   avatar: string | null
 }
 
-type ClientNotification = {
-  id: string
-  type: 'SNAP' | 'CHAT' | 'FRIEND_REQUEST' | string
-  message: string
-  isopened: boolean
-  createdAt: string | Date
-  sender: ClientUser
-}
+
 
 export default function Page() {
   const router = useRouter()
-  const[notifications,setNotifications]=useState<ClientNotification[]>([])
-  const {curruser,notificationlength,setnotificationlength}=useCurrUser();
-
-  async function readNotify(id:string,opened:boolean){
-     if(!id || opened)return;
-     const resp=await gqlclient.request(READ_NOTICN,{
-      readNotificationId:id
-     })
-     if(resp.readNotification){
-     if (resp.readNotification) {
-  setNotifications(prev => {
-    const updated = prev.map(val =>
-      val.id === id ? { ...val, isopened: true } : val
-    )
-
-    setnotificationlength(
-      updated.filter(n => !n.isopened).length
-    )
-
-    return updated
-  })
-}
-     }
-  }
-   useEffect(()=>{
-   socket.on("new_notification",(resp)=>{
-    setNotifications((prev)=>{
-      const updated=[resp,...prev]
-      setnotificationlength(updated.filter((val)=>!val.isopened).length)
-      return updated
-    });
   
-   })
+  const {curruser,notifications,readNotify}=useCurrUser();
 
-   return () => {
-    socket.off("new_notification")
-  }
-  },[])
  
-useEffect(()=>{
-  if(!curruser)return 
-  async function fetchNotify(){
-      const resp=await gqlclient.request(FETCH_NOTIFICATION,{
-        userId:curruser.id
-      })
-      if(resp.fetchnotification){
-        setNotifications(resp.fetchnotification)
-        setnotificationlength(resp.fetchnotification.length)
-      }
-  }
-fetchNotify();
-},[curruser])
 function sentTime(date?: Date | string) {
   if (!date) return "";
 
@@ -132,7 +78,20 @@ function typeTextColor(type: string, opened: boolean) {
     const color = typeTextColor(val.type, val.isopened)
 
     return (
-      <div key={val.id} onClick={() => readNotify(val.id,val.isopened)}>
+      <div key={val.id} 
+      onClick={() => {
+      if (val.type === "CHAT" || val.type === "SNAP") {
+        router.push(`/Chat/${val.sender.clerkId}`);
+      }
+      if (val.type === "FRIEND_REQUEST") {
+        router.push("/Requests");
+      }
+      if (val.type === "REQUEST_ACCEPTED") {
+        router.push("/");
+      }
+      readNotify(val.id,val.isopened)
+    }}
+      >
         
         {/* Row */}
         <div

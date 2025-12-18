@@ -6,6 +6,9 @@ import { FETCH_SNAPUSER } from "@/service/gql/queries";
 import { useEffect, useState } from "react";
 import { useCurrUser } from "./UserContext";
 import { motion } from "framer-motion";
+import { REQUEST_FRIEND } from "@/service/gql/mutation";
+import socket from "@/app/services/socket";
+import { UserPlus } from "lucide-react";
 type ClientUser = {
   id: string;
   clerkId?: string;
@@ -17,7 +20,28 @@ function SnapchatUser() {
   const [snapUsers, setSnapUsers] = useState<ClientUser[]>([]);
   const [loading, setLoading] = useState(false);
   const { curruser } = useCurrUser();
-
+   const[requested,setrequested]=useState<Set<string>>(new Set())
+  async function Request(recid:string){
+    if(!curruser)return
+    try{
+       const resp=await gqlclient.request(REQUEST_FRIEND,{
+        senderid:curruser?.id,
+        receiverid:recid
+       })
+       if(resp.friendRequest){
+        socket.emit("sent_notification",{
+          senderid:curruser?.id,
+          receiverid:recid,
+          type:"FRIEND_REQUEST",
+          message:"Send a Friend request"
+        })
+       }
+       setrequested((prev)=>new Set(prev).add(recid));
+    }
+    catch(err){
+      console.log(err);
+    }
+  }
   useEffect(() => {
     if (!curruser) return;
 
@@ -83,11 +107,24 @@ function SnapchatUser() {
             </div>
 
             {/* Add Button */}
-            <button
-              className="bg-yellow-400 text-black text-xs font-semibold px-4 py-1.5 rounded-full active:scale-95 transition"
-            >
-              Add
-            </button>
+           <button
+  disabled={requested.has(user.id)}
+  onClick={() => Request(user.id)}
+  className={`flex gap-2 h-[30px] w-[100px] p-2 rounded-2xl items-center justify-center
+    ${requested.has(user.id)
+      ? "bg-gray-400 cursor-not-allowed"
+      : "bg-[#FFFC00] hover:opacity-90"
+    }`}
+>
+  <UserPlus
+    size={18}
+    className={requested.has(user.id) ? "text-black/60" : "text-black"}
+  />
+  <p className="text-black text-sm">
+    {requested.has(user.id) ? "Requested" : "Add"}
+  </p>
+</button>
+
           </motion.div>
         ))}
       </div>

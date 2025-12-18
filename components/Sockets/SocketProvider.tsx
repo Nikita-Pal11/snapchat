@@ -6,13 +6,14 @@ import { useUser } from "@clerk/nextjs";
 import { useEffect, useRef } from "react";
 import { toast } from "sonner";
 import { useRouter } from "next/navigation";
-type NotificationType = "CHAT" | "SNAP" | "FRIEND_REQUEST"
+type NotificationType = "CHAT" | "SNAP" | "FRIEND_REQUEST" | "REQUEST_ACCEPTED"
 type SocketNotification = {
   type: NotificationType
   message: string
   roomid:string
   sender: {
     id: string
+    clerkId:string
     name: string
     avatar?: string | null
   }
@@ -36,6 +37,10 @@ function SocketProvider() {
     title: "Friend Request 👋",
     color: "bg-blue-500",
   },
+   REQUEST_ACCEPTED: {
+    title: "Request Accepted 💙",
+    color: "bg-green-500",
+  },
 }
 
 
@@ -44,6 +49,7 @@ function SocketProvider() {
   const handleNotification = ({ resp }: { resp: SocketNotification }) => {
   if (!resp) return
   console.log(resp);
+ 
   playSound()
 
   const config = snapStyle[resp.type]
@@ -52,18 +58,23 @@ function SocketProvider() {
     <div
      onClick={() => {
       if (resp.type === "CHAT" || resp.type === "SNAP") {
-        router.push(`/chat/${resp.roomid}`);
+        router.push(`/Chat/${resp.sender.clerkId}`);
       }
       if (resp.type === "FRIEND_REQUEST") {
         router.push("/Requests");
+      }
+      if (resp.type === "REQUEST_ACCEPTED") {
+        router.push("/");
       }
     }}
       className={`flex items-center gap-3 text-white px-3 py-2 rounded-lg shadow-lg ${config.color}`}
     >
       {/* Avatar */}
-      <div className="h-9 w-9 rounded-full bg-black/20 flex items-center justify-center text-sm font-semibold">
-        {resp.sender?.name?.[0]?.toUpperCase() || "U"}
-      </div>
+      <img
+              src={resp.sender?.avatar || "/avatar.png"}
+              alt={resp.sender?.name || "user"}
+              className="w-12 h-12 rounded-full object-cover"
+            />
 
       {/* Text */}
       <div className="flex flex-col leading-tight">
