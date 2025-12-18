@@ -7,7 +7,7 @@ const prismaclient = new PrismaClient();
 const server=createServer();//node server
 const io=new Server(server,{
     cors:{
-        origin:"http://localhost:3000",
+        origin:process.env.NEXT_PUBLIC_URL,
     }
 })
 const onlineusers={};
