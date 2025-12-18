@@ -86,10 +86,15 @@ export function UserContext({children}:{children:ReactNode}) {
       const resp=await gqlclient.request(FETCH_NOTIFICATION,{
         userId:curruser?.id
       })
-      if(resp.fetchnotification){
-        setNotifications(resp.fetchnotification)
-        setnotificationlength(resp.fetchnotification.length)
-      }
+      if (resp.fetchnotification) {
+  setNotifications(resp.fetchnotification);
+
+  setnotificationlength(
+    resp.fetchnotification.filter(
+      (n: ClientNotification) => !n.isopened
+    ).length
+  );
+}
   }
 fetchNotify();
 },[curruser])

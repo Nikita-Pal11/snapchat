@@ -8,6 +8,8 @@ import {
   Square,
   X,
   Clock,
+  SendHorizonal,
+  Image,
 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { use, useEffect, useMemo, useState } from "react";
@@ -59,6 +61,8 @@ export default function Page({
   const [openSnap, setOpenSnap] = useState<Message | null>(null);
   const [loading, setLoading] = useState(false);
   const [loadingSnap, setLoadingSnap] = useState(false);
+  const [sending, setSending] = useState(false);
+
 
   // ------------------- DATE HELPERS -------------------
   function getDayLabel(date?: string) {
@@ -179,7 +183,9 @@ export default function Page({
 
   // ------------------- SEND MESSAGE -------------------
   function sendMessage() {
-    if (!curruser?.id || !user?.id || !message) return;
+    if (!curruser?.id || !user?.id || !message.trim()) return;
+
+  setSending(true);
 
     socket.emit("send_msg", {
       roomid,
@@ -200,6 +206,8 @@ export default function Page({
     })
 
     setMessage("");
+    setSending(false);
+
   }
 
   // ------------------- SNAP UPLOAD -------------------
@@ -378,44 +386,58 @@ export default function Page({
         </div>
 
         {/* INPUT BAR */}
-        <div className="px-3 py-2 border-t border-white/10">
-          <div className="flex items-center gap-2">
-            <label className="w-11 h-11 rounded-full bg-[#FFFC00] text-black flex items-center justify-center cursor-pointer">
-              {!loadingSnap ? (
-                <Camera size={18} />
-              ) : (
-                <div className="w-5 h-5 rounded-full border-2 border-black border-t-transparent animate-spin" />
-              )}
-              <input hidden type="file" onChange={handleSnap} />
-            </label>
+       <div className="px-3 py-2 border-t border-white/10">
+  <div className="flex items-end gap-2">
 
-            <div className="flex-1 bg-[#1C1C1C] rounded-full flex items-center px-4 py-2">
-              <input
-                value={message}
-                onChange={(e) => setMessage(e.target.value)}
-                placeholder="Send a chat"
-                className="flex-1 bg-transparent outline-none text-sm"
-              />
-              <button
-                onClick={sendMessage}
-                onKeyDown={(e) => e.key === "Enter" && sendMessage()}
-                disabled={!message}
-                className="ml-2 w-8 h-8 rounded-full bg-[#FFFC00] text-black flex items-center justify-center disabled:opacity-40"
-              >
-                <Send size={14} />
-              </button>
-            </div>
+    {/* SNAP CAMERA */}
+    <label className="w-11 h-11 shrink-0 rounded-full bg-[#FFFC00] text-black flex items-center justify-center cursor-pointer">
+      {!loadingSnap ? (
+        <Camera size={18} />
+      ) : (
+        <div className="w-5 h-5 border-2 border-black border-t-transparent rounded-full animate-spin" />
+      )}
+      <input hidden type="file" onChange={handleSnap} />
+    </label>
 
-            <label className="w-11 h-11 rounded-full bg-[#FFFC00] text-black flex items-center justify-center cursor-pointer">
-              {!loading ? (
-                <Play size={18} />
-              ) : (
-                <div className="w-5 h-5 rounded-full border-2 border-black border-t-transparent animate-spin" />
-              )}
-              <input hidden type="file" onChange={handleMedia} />
-            </label>
-          </div>
-        </div>
+    {/* TEXT INPUT */}
+    <div className="flex-1 bg-[#1C1C1C] rounded-2xl px-4 py-2 flex items-end gap-2">
+      <textarea
+        value={message}
+        rows={1}
+        onChange={(e) => {
+          setMessage(e.target.value);
+          e.target.style.height = "auto";
+          e.target.style.height = `${Math.min(e.target.scrollHeight, 96)}px`;
+        }}
+        placeholder="Send a chat"
+        className="flex-1 resize-none bg-transparent outline-none text-sm max-h-24 overflow-y-auto"
+      />
+
+      <button
+        onClick={sendMessage}
+        disabled={!message || sending}
+        className="w-8 h-8 rounded-full bg-[#FFFC00] text-black flex items-center justify-center disabled:opacity-40"
+      >
+        {sending ? (
+          <div className="w-4 h-4 border-2 border-black border-t-transparent rounded-full animate-spin" />
+        ) : (
+          <SendHorizonal size={14} />
+        )}
+      </button>
+    </div>
+
+    {/* GALLERY MEDIA */}
+    <label className="w-11 h-11 shrink-0 rounded-full bg-[#FFFC00] text-black flex items-center justify-center cursor-pointer">
+      {!loading ? (
+        <Image size={18} />
+      ) : (
+        <div className="w-5 h-5 border-2 border-black border-t-transparent rounded-full animate-spin" />
+      )}
+      <input hidden type="file" onChange={handleMedia} />
+    </label>
+  </div>
+</div>
+
 
         {/* SNAP VIEW */}
         {openSnap && (
