@@ -103,3 +103,15 @@ query Fetchnotification($userId: String!) {
   }
 }
 `
+
+export const FETCH_SNAPUSER=gql`
+query FetchUsers($fetchUsersId: String!) {
+  fetchUsers(id: $fetchUsersId) {
+    id
+    clerkId
+    email
+    name
+    avatar
+  }
+}
+`

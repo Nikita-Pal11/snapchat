@@ -3,9 +3,13 @@ import { NextRequest, NextResponse } from "next/server";
 import { ApolloServer } from "@apollo/server";
 import { gql } from "graphql-tag";
 import prismaclient from "@/service/prisma";
-import { AcceptRequestArgs, FetchMsgArgs, fetchnotify, FindUserArgs, FriendRequestArgs, FriendsListArgs, GetUserArgs, ReadNotificationArgs, UserRequestsArgs } from "./type";
+import { AcceptRequestArgs, FetchMsgArgs, fetchnotify, FindUserArgs, FriendRequestArgs, FriendsListArgs, GetUserArgs, ReadNotificationArgs, snapuser, UserRequestsArgs } from "./type";
 
-
+const allowedOrigins = [
+  "http://localhost:3000",
+  "https://studio.apollographql.com",
+  "https://snapchat-vert.vercel.app/",
+];
 const typeDefs = gql`
  
   type Query {
@@ -15,6 +19,7 @@ const typeDefs = gql`
     getuser(id:String!):User
     fetchmsg(roomid:String!):[messages]
     fetchnotification(userId:String!):[notification]
+    fetchUsers(id:String!):[User]
   }
   type Mutation {
   friendRequest(senderid:String!,receiverid:String!,status:String):Boolean
@@ -37,6 +42,7 @@ const typeDefs = gql`
   SNAP
   CHAT
 }
+
   type  RequestTable {
       id:String
       senderid:String
@@ -104,6 +110,22 @@ const resolvers = {
             }
         })
     },
+   fetchUsers: async (_:unknown,args:snapuser)=>{
+      return await prismaclient.user.findMany({
+        where:{
+          AND:[
+            {id:{not:args.id}},
+            {NOT:{
+              friendOf:{
+                some:{
+                  userId:args.id
+                }
+              }
+            }}
+          ]
+        }
+      })
+   },
     friendsList: async (_:unknown,args: FriendsListArgs)=>{
         const friends= await prismaclient.friends.findMany({
             where:{
@@ -253,20 +275,62 @@ const resolvers = {
 };
 
 const server = new ApolloServer({
-    typeDefs,
-    resolvers,
+  typeDefs,
+  resolvers,
 });
 
-// Typescript: req has the type NextRequest
-const handler = startServerAndCreateNextHandler<NextRequest>(server, {
-  context: async (req) => ({ req }),
-});
+const startServer = server.start();
 
-export async function GET(req: NextRequest) {
-  return handler(req);
+function buildHeaders(origin: string) {
+  const headers: Record<string, string> = {};
+
+  if (allowedOrigins.includes(origin)) {
+    headers["Access-Control-Allow-Origin"] = origin;
+    headers["Access-Control-Allow-Credentials"] = "true";
+  }
+
+  headers["Access-Control-Allow-Methods"] = "GET,POST,OPTIONS";
+  headers["Access-Control-Allow-Headers"] =
+    "Content-Type, Authorization, Credentials";
+  return headers;
+}
+
+export async function OPTIONS(req: NextRequest) {
+  const origin = req.headers.get("origin") || "";
+  const headers = buildHeaders(origin);
+
+  return new NextResponse(null, { status: 204, headers });
 }
 
 export async function POST(req: NextRequest) {
-  return handler(req);
+  const origin = req.headers.get("origin") || "";
+  const headers = buildHeaders(origin);
+
+  try {
+    await startServer;
+
+    const { query, variables, operationName } = await req.json();
+
+    const result = await server.executeOperation({
+      query,
+      variables,
+      operationName,
+    });
+
+    const payload =
+      result.body.kind === "single"
+        ? result.body.singleResult
+        : result.body;
+
+    return NextResponse.json(payload, { headers });
+  } catch (err: any) {
+    return NextResponse.json(
+      { errors: [{ message: err.message }] },
+      { status: 500, headers }
+    );
+  }
 }
- 
+
+export async function GET() {
+  return NextResponse.json({ status: "GraphQL API Running" });
+}

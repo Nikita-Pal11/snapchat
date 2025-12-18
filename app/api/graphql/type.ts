@@ -35,3 +35,6 @@ export interface AcceptRequestArgs {
 export interface ReadNotificationArgs {
   id: string;
 };
+export interface snapuser {
+  id:string;
+}

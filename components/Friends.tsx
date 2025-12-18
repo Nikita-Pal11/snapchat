@@ -11,6 +11,7 @@ import SubtitleComp from "./SubtitleComp";
 import socket from "@/app/services/socket";
 import { ArrowRight, MessageCircle, Square, X } from "lucide-react";
 import { Friends as userFriend, User } from "@prisma/client";
+import UserSkeleton from "./UserSkeleton";
 
 type LastMessage = {
   id: string;
@@ -171,10 +172,14 @@ function formatTime(date?: string) {
 
         <div className="flex-1 overflow-y-auto">
   {loading && (
-    <p className="text-center text-white/40 py-4">Loading...</p>
-  )}
+  <div className="space-y-2">
+    {[...Array(4)].map((_, i) => (
+      <UserSkeleton key={i} />
+    ))}
+  </div>
+)}
 
-  {friendlist?.length === 0 && (
+  {!loading && friendlist?.length === 0 &&  (
     <p className="text-center text-white/40 py-4">Add Friends to chat.</p>
   )}
 

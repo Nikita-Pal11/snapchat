@@ -2,7 +2,7 @@
 
 import gqlclient from '@/service/gql';
 import { FIND_FRIENDS } from '@/service/gql/queries';
-import { Search, UserPlus } from 'lucide-react';
+import { ArrowLeft, Search, UserPlus } from 'lucide-react';
 import Link from 'next/link';
 import React, { useEffect, useState } from 'react';
 import { motion } from "framer-motion";
@@ -12,6 +12,8 @@ import socket from '../services/socket';
 import { useCurrUser } from '@/components/UserContext';
 import UserComp from '@/components/Usercomp';
 import { useRouter } from 'next/navigation';
+import SnapchatUser from '@/components/SnapchatUser';
+import UserSkeleton from '@/components/UserSkeleton';
 
 type FriendUser = {
   id: string;
@@ -82,66 +84,109 @@ export default function Page() {
   }, [name]);
 
   return (
-    <div className="flex justify-center w-full h-screen text-white">
-      <div className="w-full max-w-[420px] h-full p-4 flex flex-col bg-black">
+  <div className="flex justify-center w-full h-screen text-white">
+    <div className="w-full max-w-[420px] h-full  bg-black flex flex-col">
 
-
-        <div className="flex items-center gap-2 mb-5">
-          <input
-            type="text"
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-            onKeyDown={(e) => e.key === "Enter" && searchFriends()}
-            placeholder="Search by name..."
-            className="flex-1 px-4 py-2 rounded-full bg-[#1A1A1A] text-white placeholder-white/40 outline-none shadow-md border border-white/10"
-          />
-
+      {/* Header / Search */}
+      <div className="px-4 pt-4 pb-3 border-b border-white/10">
+        <div className="flex items-center gap-2">
           <button
-            onClick={searchFriends}
-            className="p-2 rounded-full bg-[#FFFC00] text-black shadow-md active:scale-95 transition"
+            onClick={() => router.back()}
+            className="p-1 rounded-full active:scale-90 transition"
           >
-            <Search size={20} />
+            <ArrowLeft size={22} />
           </button>
 
-          <Link href="/" className="ml-2 font-semibold text-white/80 hover:text-white transition">
-            Cancel
-          </Link>
+          <div className="flex-1 flex items-center gap-2">
+            <input
+              type="text"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              onKeyDown={(e) => e.key === "Enter" && searchFriends()}
+              placeholder="Search friends"
+              className="flex-1 px-4 py-2 rounded-full bg-[#1A1A1A] text-white placeholder-white/40 outline-none border border-white/10"
+            />
+
+            <button
+              onClick={searchFriends}
+              className="p-2 rounded-full bg-[#FFFC00] text-black active:scale-95 transition"
+            >
+              <Search size={18} />
+            </button>
+          </div>
         </div>
+      </div>
 
-       
-        <h1 className="text-xl font-bold mb-3">Find Friends</h1>
+      {/* Content */}
+      <div className="flex-1 overflow-y-auto px-3 py-3 space-y-6">
 
-        <div className="flex-1 overflow-y-auto">
-  {loading && (
-    <p className="text-center text-white/40 py-4">Searching...</p>
-  )}
+        {/* Title */}
+        <h1 className="text-lg font-semibold px-1">
+          Find Friends
+        </h1>
 
-  {!loading && name.trim() && friends.length === 0 && (
-    <p className="text-center text-white/40 py-4">No users found</p>
-  )}
-
-  {friends.map((val) => (
+        {/* Searching */}
+       {loading && (
+  <>
+    <UserSkeleton />
+    <UserSkeleton />
     <motion.div
-      key={val.id}
-      initial={{ opacity: 0, x: -10 }}
-      animate={{ opacity: 1, x: 0 }}
-      transition={{ duration: 0.25 }}
+      animate={{ opacity: [0.5, 1, 0.5] }}
+      transition={{ repeat: Infinity, duration: 1.2 }}
+      className="text-center text-xs text-white/40 mt-2"
     >
-      <UserComp
-        name={val.name}
-        avatar={val.avatar || ""}
-        subtitle={val.email}
-showAdd={!val.isFriend && !val.requestSent && !val.requestReceived}
-  showAccept={val.requestReceived}
-  showChat={val.isFriend}
-  onAdd={() => Request(val.id)}
-  onAccept={() => router.push("/Requests")}
-      />
+      Finding people you may know…
     </motion.div>
-  ))}
-</div>
+  </>
+)}
 
+
+        {/* No Results */}
+        {!loading && name.trim() && friends.length === 0 && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            className="text-center text-white/40 mt-6"
+          >
+            No users found
+          </motion.div>
+        )}
+
+        {/* Search Results */}
+        {friends.length > 0 && (
+          <div className="space-y-2">
+            {friends.map((val, index) => (
+              <motion.div
+                key={val.id}
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: index * 0.04 }}
+              >
+                <UserComp
+                  name={val.name}
+                  avatar={val.avatar || ""}
+                  subtitle={val.email}
+                  showAdd={!val.isFriend && !val.requestSent && !val.requestReceived}
+                  showAccept={val.requestReceived}
+                  showChat={val.isFriend}
+                  onAdd={() => Request(val.id)}
+                  onAccept={() => router.push("/Requests")}
+                />
+              </motion.div>
+            ))}
+          </div>
+        )}
+
+        {/* Suggested Friends (only when not searching) */}
+        {!name.trim() && (
+          <>
+            <div className="h-px bg-white/10" />
+            <SnapchatUser />
+          </>
+        )}
       </div>
     </div>
-  );
+  </div>
+);
+
 }
