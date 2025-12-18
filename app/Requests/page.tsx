@@ -35,18 +35,24 @@ export default function Page() {
   const { curruser } = useCurrUser();
   const router = useRouter();
 
- async function acceptRequest(requestId: string, senderUserId: string) {
-  await gqlclient.request(ACCEPT_REQUEST, {
+  async function acceptRequest(requestId: string, senderUserId: string) {
+    try {
+      const resp =await gqlclient.request(ACCEPT_REQUEST, {
     requestid: requestId,
   });
-
-  socket.emit("sent_notification", {
-    senderid: curruser!.id,      
-    receiverid: senderUserId,    
-    type: "REQUEST_ACCEPTED",
-    message: "Accepted your friend request",
-  });
-}
+      if (resp.AcceptRequest) {
+        setrequests((prev) => prev.filter((r) => r.id !== requestId));
+      }
+       socket.emit("sent_notification",{
+      senderid: curruser!.id,
+        receiverid: senderUserId,
+        type:"REQUEST_ACCEPTED",
+        message:"Accept your request"
+    })
+    } catch (err) {
+      console.log(err);
+    }
+  }
 
   useEffect(() => {
     if (!curruser) return;
