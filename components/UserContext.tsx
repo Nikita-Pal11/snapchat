@@ -58,8 +58,9 @@ export function UserContext({children}:{children:ReactNode}) {
     )
 
     setnotificationlength(
-      updated.filter(n => !n.isopened).length
-    )
+  updated.filter(n => n?.isopened === false).length
+);
+
 
     return updated
   })
@@ -68,9 +69,12 @@ export function UserContext({children}:{children:ReactNode}) {
   }
   useEffect(()=>{
    socket.on("new_notification",({resp})=>{
+    if (!resp) return;
     setNotifications((prev)=>{
       const updated=[resp,...prev]
-      setnotificationlength(updated.filter((val)=>!val.isopened).length)
+       setnotificationlength(
+      updated.filter(val => val?.isopened === false).length
+    );
       return updated
     });
   
@@ -90,10 +94,11 @@ export function UserContext({children}:{children:ReactNode}) {
   setNotifications(resp.fetchnotification);
 
   setnotificationlength(
-    resp.fetchnotification.filter(
-      (n: ClientNotification) => !n.isopened
-    ).length
-  );
+  resp.fetchnotification
+    .filter((n: ClientNotification) => n?.isopened === false)
+    .length
+);
+
 }
   }
 fetchNotify();

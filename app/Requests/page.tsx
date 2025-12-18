@@ -6,7 +6,6 @@ import { USER_REQUESTS } from "@/service/gql/queries";
 import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import { ACCEPT_REQUEST } from "@/service/gql/mutation";
-
 import { ArrowLeft } from "lucide-react";
 import { useRouter } from "next/navigation";
 import SnapchatUser from "@/components/SnapchatUser";
@@ -14,7 +13,6 @@ import socket from "../services/socket";
 
 type ClientUser = {
   id: string;
-  
   name: string | null;
   email: string;
   avatar: string | null;
@@ -22,38 +20,49 @@ type ClientUser = {
 
 type ClientRequest = {
   id: string;
-  senderid:string;
+  senderid: string;
   sender: ClientUser;
   receiver: ClientUser;
 };
 
-
 export default function Page() {
   const [allrequests, setrequests] = useState<ClientRequest[]>([]);
   const [loading, setLoading] = useState(false);
-  const [showAll,setShowAll]=useState(false);
+  const [showAll, setShowAll] = useState(false);
+  const [accepting, setAccepting] = useState<string | null>(null); // track which request is being accepted
   const { curruser } = useCurrUser();
   const router = useRouter();
 
+  // Accept a request
   async function acceptRequest(requestId: string, senderUserId: string) {
+    if (accepting === requestId) return; // prevent double click
     try {
-      const resp =await gqlclient.request(ACCEPT_REQUEST, {
-    requestid: requestId,
-  });
+      setAccepting(requestId);
+
+      const resp = await gqlclient.request(ACCEPT_REQUEST, {
+        requestid: requestId,
+      });
+
       if (resp.AcceptRequest) {
+        // Remove accepted request immediately
         setrequests((prev) => prev.filter((r) => r.id !== requestId));
+
+        // Notify sender
+        socket.emit("sent_notification", {
+          senderid: curruser!.id,
+          receiverid: senderUserId,
+          type: "REQUEST_ACCEPTED",
+          message: "Accepted your request",
+        });
       }
-       socket.emit("sent_notification",{
-      senderid: curruser!.id,
-        receiverid: senderUserId,
-        type:"REQUEST_ACCEPTED",
-        message:"Accept your request"
-    })
     } catch (err) {
       console.log(err);
+    } finally {
+      setAccepting(null);
     }
   }
 
+  // Fetch requests
   useEffect(() => {
     if (!curruser) return;
 
@@ -63,7 +72,16 @@ export default function Page() {
         const resp = await gqlclient.request(USER_REQUESTS, {
           userId: curruser.id,
         });
-        setrequests(resp.userRequests || []);
+
+        // Defensive: remove any undefined items
+        const requests = (resp.userRequests || []).filter(Boolean);
+
+        // Merge with local state and remove duplicates
+        setrequests((prev) => {
+          const map = new Map<string, ClientRequest>();
+          [...prev, ...requests].forEach((r) => map.set(r.id, r));
+          return Array.from(map.values());
+        });
       } catch (err) {
         console.log(err);
       } finally {
@@ -74,113 +92,107 @@ export default function Page() {
     friendRequest();
   }, [curruser]);
 
-  const visibleRequests=showAll?allrequests:allrequests.slice(0,2);
+  // Only show pending requests (state is already updated after accept)
+  const pendingRequests = allrequests.filter(Boolean);
+  const visibleRequests = showAll
+    ? pendingRequests
+    : pendingRequests.slice(0, 2);
 
   return (
-  <div className="w-full h-screen text-white flex justify-center ">
-    <div className="w-full max-w-[420px] bg-black flex flex-col">
-
-      {/* Header */}
-      <div className="flex items-center gap-3 px-4 py-4 border-b border-white/10">
-        <button
-          onClick={() => router.back()}
-          className="p-1 rounded-full active:scale-90 transition"
-        >
-          <ArrowLeft size={22} />
-        </button>
-
-        <h1 className="text-lg font-semibold tracking-wide">
-          Friend Requests
-        </h1>
-      </div>
-
-      {/* Content */}
-      <div className="flex-1 overflow-y-auto px-3 py-2 space-y-6">
-
-        {loading && (
-          <p className="text-center text-white/40 mt-8">
-            Loading...
-          </p>
-        )}
-
-        {/* Empty State */}
-        {!loading && allrequests.length === 0 && (
-          <motion.div
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="flex flex-col items-center text-center mt-8"
+    <div className="w-full h-screen text-white flex justify-center">
+      <div className="w-full max-w-[420px] bg-black flex flex-col">
+        {/* Header */}
+        <div className="flex items-center gap-3 px-4 py-4 border-b border-white/10">
+          <button
+            onClick={() => router.back()}
+            className="p-1 rounded-full active:scale-90 transition"
           >
-            <div className="text-5xl mb-3">👻</div>
-            <p className="text-lg font-semibold">
-              You’re all caught up!
-            </p>
-            <p className="text-sm text-white/50">
-              No friend requests right now
-            </p>
-          </motion.div>
-        )}
+            <ArrowLeft size={22} />
+          </button>
 
-        {/* Requests Section */}
-        {allrequests.length > 0 && (
-          <div>
-            <div className="flex justify-between items-center mb-2 px-1">
-              <p className="text-sm font-semibold">
-                Requests ({allrequests.length})
-              </p>
+          <h1 className="text-lg font-semibold tracking-wide">
+            Friend Requests
+          </h1>
+        </div>
 
-              {allrequests.length > 2 && !showAll && (
-                <button
-                  onClick={() => setShowAll(true)}
-                  className="text-xs text-yellow-400 font-semibold"
-                >
-                  View more
-                </button>
-              )}
-            </div>
+        {/* Content */}
+        <div className="flex-1 overflow-y-auto px-3 py-2 space-y-6">
+          {loading && (
+            <p className="text-center text-white/40 mt-8">Loading...</p>
+          )}
 
-            <div className="space-y-2">
-              {visibleRequests.map((val, index) => (
-                <motion.div
-                  key={val.id}
-                  initial={{ opacity: 0, y: 10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: index * 0.05 }}
-                  className="bg-[#111] rounded-xl px-3 py-2 flex items-center gap-3"
-                >
-                  <img
-                    src={val.sender.avatar || "/avatar.png"}
-                    className="w-12 h-12 rounded-full object-cover"
-                  />
+          {/* Empty State */}
+          {!loading && pendingRequests.length === 0 && (
+            <motion.div
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="flex flex-col items-center text-center mt-8"
+            >
+              <div className="text-5xl mb-3">👻</div>
+              <p className="text-lg font-semibold">You’re all caught up!</p>
+              <p className="text-sm text-white/50">No friend requests right now</p>
+            </motion.div>
+          )}
 
-                  <div className="flex-1">
-                    <p className="font-semibold text-sm">
-                      {val.sender.name || "Unknown"}
-                    </p>
-                    <p className="text-xs text-white/50 truncate">
-                      {val.sender.email}
-                    </p>
-                  </div>
+          {/* Requests Section */}
+          {pendingRequests.length > 0 && (
+            <div>
+              <div className="flex justify-between items-center mb-2 px-1">
+                <p className="text-sm font-semibold">
+                  Requests ({pendingRequests.length})
+                </p>
 
+                {pendingRequests.length > 2 && !showAll && (
                   <button
-                    onClick={() => acceptRequest(val.id, val.senderid)}
-                    className="bg-yellow-400 text-black text-xs font-semibold px-4 py-1.5 rounded-full active:scale-95 transition"
+                    onClick={() => setShowAll(true)}
+                    className="text-xs text-yellow-400 font-semibold"
                   >
-                    Accept
+                    View more
                   </button>
-                </motion.div>
-              ))}
+                )}
+              </div>
+
+              <div className="space-y-2">
+                {visibleRequests.map((val, index) => (
+                  <motion.div
+                    key={val.id}
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: index * 0.05 }}
+                    className="bg-[#111] rounded-xl px-3 py-2 flex items-center gap-3"
+                  >
+                    <img
+                      src={val.sender.avatar || "/avatar.png"}
+                      className="w-12 h-12 rounded-full object-cover"
+                    />
+
+                    <div className="flex-1">
+                      <p className="font-semibold text-sm">
+                        {val.sender.name || "Unknown"}
+                      </p>
+                      <p className="text-xs text-white/50 truncate">{val.sender.email}</p>
+                    </div>
+
+                    <button
+                      disabled={accepting === val.id}
+                      onClick={() => acceptRequest(val.id, val.senderid)}
+                      className="bg-yellow-400 disabled:opacity-50 text-black text-xs font-semibold px-4 py-1.5 rounded-full active:scale-95 transition"
+                    >
+                      Accept
+                    </button>
+                  </motion.div>
+                ))}
+              </div>
             </div>
-          </div>
-        )}
+          )}
 
-        {/* Divider */}
-        <div className="h-px bg-white/10" />
+          {/* Divider */}
+          <div className="h-px bg-white/10" />
 
-        {/* Suggested Friends */}
-        <SnapchatUser />
+          {/* Suggested Friends */}
+          <SnapchatUser />
+        </div>
       </div>
     </div>
-  </div>
-);
-
+  );
 }

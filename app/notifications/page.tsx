@@ -75,7 +75,7 @@ function typeTextColor(type: string, opened: boolean) {
         {/* Notifications List */}
 <div className="flex-1 overflow-y-auto mt-2">
   {notifications.map((val, index) => {
-    const color = typeTextColor(val.type, val.isopened)
+    const color = typeTextColor(val?.type, val?.isopened)
 
     return (
       <div key={val.id} 
