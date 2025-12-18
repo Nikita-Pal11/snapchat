@@ -8,9 +8,9 @@ import { AcceptRequestArgs, FetchMsgArgs, fetchnotify, FindUserArgs, FriendReque
 const allowedOrigins = [
   "http://localhost:3000",
   "https://studio.apollographql.com",
-  "https://snapchat-vert.vercel.app/",
-  "https://studio.apollographql.com/sandbox/explorer/"
+  "https://snapchat-vert.vercel.app"
 ];
+
 const typeDefs = gql`
  
   type Query {
