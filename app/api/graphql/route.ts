@@ -9,6 +9,7 @@ const allowedOrigins = [
   "http://localhost:3000",
   "https://studio.apollographql.com",
   "https://snapchat-vert.vercel.app/",
+  "https://studio.apollographql.com/sandbox/explorer/"
 ];
 const typeDefs = gql`
  
