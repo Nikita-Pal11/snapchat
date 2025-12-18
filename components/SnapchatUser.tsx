@@ -2,13 +2,19 @@
 
 import gqlclient from "@/service/gql";
 import { FETCH_SNAPUSER } from "@/service/gql/queries";
-import { User } from "@prisma/client";
+
 import { useEffect, useState } from "react";
 import { useCurrUser } from "./UserContext";
 import { motion } from "framer-motion";
-
+type ClientUser = {
+  id: string;
+  clerkId?: string;
+  name: string | null;
+  email: string;
+  avatar: string | null;
+};
 function SnapchatUser() {
-  const [snapUsers, setSnapUsers] = useState<User[]>([]);
+  const [snapUsers, setSnapUsers] = useState<ClientUser[]>([]);
   const [loading, setLoading] = useState(false);
   const { curruser } = useCurrUser();
 

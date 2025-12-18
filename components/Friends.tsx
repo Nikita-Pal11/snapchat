@@ -10,7 +10,7 @@ import { useRouter } from "next/navigation";
 import SubtitleComp from "./SubtitleComp";
 import socket from "@/app/services/socket";
 import { ArrowRight, MessageCircle, Square, X } from "lucide-react";
-import { Friends as userFriend, User } from "@prisma/client";
+
 import UserSkeleton from "./UserSkeleton";
 
 type LastMessage = {
@@ -25,17 +25,29 @@ type LastMessage = {
   updatedAt: string;
 };
 
-type FriendListItem = userFriend & {
-  friend: User;
+type ClientUser = {
+  id: string;
+  clerkId: string;
+  name: string | null;
+  avatar: string | null;
+};
+
+type ClientFriend = {
+  id: string;
+  userId: string;
+  friendId: string;
+  streaks: number;
+  friend: ClientUser;
   lastmsg?: LastMessage;
 };
 
+
 function Friends() {
-  const[friendlist,setfriendlist]=useState<FriendListItem[]>([]);
+  const[friendlist,setfriendlist]=useState<ClientFriend[]>([]);
   const[loading,setloading]=useState(false);
   const{curruser}=useCurrUser();
-  const[opensnap,setopensnap]=useState<FriendListItem | null>(null);
- function openSnap(val: FriendListItem) {
+  const[opensnap,setopensnap]=useState<ClientFriend | null>(null);
+ function openSnap(val: ClientFriend) {
   const lastmsg = val.lastmsg;
   if (!lastmsg?.id || !lastmsg.roomid) return;
   if (lastmsg.isopened) return;

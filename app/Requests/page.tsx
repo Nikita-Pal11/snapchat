@@ -6,18 +6,27 @@ import { USER_REQUESTS } from "@/service/gql/queries";
 import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import { ACCEPT_REQUEST } from "@/service/gql/mutation";
-import { RequestTable, User } from "@prisma/client";
+
 import { ArrowLeft } from "lucide-react";
 import { useRouter } from "next/navigation";
 import SnapchatUser from "@/components/SnapchatUser";
 
-type RequestWithUsers = RequestTable & {
-  sender: User;
-  receiver: User;
+type ClientUser = {
+  id: string;
+  name: string | null;
+  email: string;
+  avatar: string | null;
 };
 
+type ClientRequest = {
+  id: string;
+  sender: ClientUser;
+  receiver: ClientUser;
+};
+
+
 export default function Page() {
-  const [allrequests, setrequests] = useState<RequestWithUsers[]>([]);
+  const [allrequests, setrequests] = useState<ClientRequest[]>([]);
   const [loading, setLoading] = useState(false);
   const [showAll,setShowAll]=useState(false);
   const { curruser } = useCurrUser();

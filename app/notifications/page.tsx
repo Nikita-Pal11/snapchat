@@ -5,18 +5,31 @@ import { useRouter } from 'next/navigation'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Card, CardContent } from '@/components/ui/card'
 import { use, useEffect, useState } from 'react'
-import { Notifications, User } from '@prisma/client'
+
 import gqlclient from '@/service/gql'
 import { FETCH_NOTIFICATION } from '@/service/gql/queries'
 import { useCurrUser } from '@/components/UserContext'
 import { READ_NOTICN } from '@/service/gql/mutation'
 import socket from '../services/socket'
-type notifyts =Notifications & {
-  sender:User
+type ClientUser = {
+  id: string
+  name: string | null
+  email?: string
+  avatar: string | null
 }
+
+type ClientNotification = {
+  id: string
+  type: 'SNAP' | 'CHAT' | 'FRIEND_REQUEST' | string
+  message: string
+  isopened: boolean
+  createdAt: string | Date
+  sender: ClientUser
+}
+
 export default function Page() {
   const router = useRouter()
-  const[notifications,setNotifications]=useState<notifyts[]>([])
+  const[notifications,setNotifications]=useState<ClientNotification[]>([])
   const {curruser,notificationlength,setnotificationlength}=useCurrUser();
 
   async function readNotify(id:string,opened:boolean){
