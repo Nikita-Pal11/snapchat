@@ -1,3 +1,3 @@
 import { GraphQLClient } from "graphql-request";
-const gqlclient=new GraphQLClient("http://localhost:3000/api/graphql");
+const gqlclient=new GraphQLClient(process.env.NEXT_PUBLIC_URL+"/api/graphql");
 export default gqlclient
