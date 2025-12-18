@@ -409,6 +409,12 @@ export default function Page({
           e.target.style.height = "auto";
           e.target.style.height = `${Math.min(e.target.scrollHeight, 96)}px`;
         }}
+         onKeyDown={(e) => {
+    if (e.key === "Enter" && !e.shiftKey) {
+      e.preventDefault();   
+      sendMessage();       
+    }
+  }}
         placeholder="Send a chat"
         className="flex-1 resize-none bg-transparent outline-none text-sm max-h-24 overflow-y-auto"
       />
