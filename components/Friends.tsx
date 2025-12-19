@@ -182,7 +182,7 @@ function formatTime(date?: string) {
     <div className="flex justify-center w-full h-screen text-white">
       <div className="w-full max-w-[420px] h-full flex flex-col bg-black">
 
-        <div className="flex-1 overflow-y-auto">
+        <div className="flex-1 overflow-y-auto no-scrollbar overscroll-none">
   {loading && (
   <div className="space-y-2">
     {[...Array(4)].map((_, i) => (
@@ -220,13 +220,18 @@ function formatTime(date?: string) {
 
 
 
-  {friendlist?.map((val) => (
+  {friendlist?.map((val,index) => (
     <motion.div
-      key={val.id}
-      initial={{ opacity: 0, x: -10 }}
-      animate={{ opacity: 1, x: 0 }}
-      transition={{ duration: 0.25 }}
-    >
+  key={val.id}
+  initial={{ opacity: 0, y: 6 }}
+  animate={{ opacity: 1, y: 0 }}
+  transition={{ duration: 0.2 }}
+  className="
+    px-3
+    active:bg-white/5
+    transition-colors
+  "
+>
       <UserComp
         name={val.friend.name || ""}
         avatar={val.friend.avatar || ""}
@@ -315,6 +320,7 @@ function formatTime(date?: string) {
         onChat={()=>router.push(`/Chat/${val.friend.clerkId}`)}
       />
     </motion.div>
+    
   ))}
 </div>
 {opensnap && (

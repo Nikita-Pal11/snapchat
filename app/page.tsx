@@ -1,6 +1,7 @@
 import Navbar from "@/components/Navbar";
 import UserComp from "@/components/Usercomp";
 import Friends from "@/components/Friends";
+import Navigationbar from "@/components/Navigationbar";
 export default function Home() {
   return (
     <div className="w-full h-screen flex justify-center">
@@ -14,7 +15,7 @@ export default function Home() {
         <div className="flex-1 overflow-y-auto">
           <Friends/>
         </div>
-
+        <Navigationbar/>
       </div>
     </div>
   );

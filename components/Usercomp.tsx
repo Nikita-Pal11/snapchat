@@ -42,14 +42,14 @@ export default function UserComp({
   return (
     <div
       className="
-        w-full max-w-[420px] h-[90px] mx-auto px-4 flex items-center
-        bg-black text-white border-b border-white/10 rounded-xl
+        w-full max-w-[420px] h-[75px] mx-auto px-2 flex items-center
+        bg-black text-white border-b border-white/10 rounded-md
         hover:bg-white/5 transition-colors duration-200 cursor-pointer
       "
       onClick={onChat}
     >
       {/* Avatar */}
-      <Avatar className="w-14 h-14 ring-2 ring-white/20">
+      <Avatar className="w-10 h-10 ring-2 ring-white/20">
         <AvatarImage src={avatar} alt={name} />
         <AvatarFallback>U</AvatarFallback>
       </Avatar>
