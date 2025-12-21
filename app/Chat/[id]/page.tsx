@@ -12,7 +12,7 @@ import {
   Image,
 } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { use, useEffect, useMemo, useState } from "react";
+import { use, useEffect, useMemo, useRef, useState } from "react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useCurrUser } from "@/components/UserContext";
 import gqlclient from "@/service/gql";
@@ -53,8 +53,6 @@ export default function Page({
   const { id } = use(params);
   const router = useRouter();
   const { curruser } = useCurrUser();
-
-
   const [message, setMessage] = useState<string>("");
   const [msgs, setMsgs] = useState<Message[]>([]);
   const [user, setUser] = useState<ChatUser | null>(null);
@@ -62,8 +60,7 @@ export default function Page({
   const [loading, setLoading] = useState(false);
   const [loadingSnap, setLoadingSnap] = useState(false);
   const [sending, setSending] = useState(false);
-
-
+  const latestMsgref=useRef<HTMLDivElement>(null);
   // ------------------- DATE HELPERS -------------------
   function getDayLabel(date?: string) {
     if (!date) return "";
@@ -281,7 +278,9 @@ export default function Page({
         message:"Sent a chat"
     })
   }
-
+useEffect(()=>{
+ latestMsgref.current?.scrollIntoView({behavior:"smooth"})
+},[msgs])
   // ------------------- RENDER -------------------
   return (
     <div className="fixed inset-0 text-white flex justify-center">
@@ -383,6 +382,7 @@ export default function Page({
               </div>
             );
           })}
+          <div ref={latestMsgref}/>
         </div>
 
         {/* INPUT BAR */}

@@ -39,12 +39,12 @@ type ClientFriend = {
   streaks: number;
   friend: ClientUser;
   lastmsg?: LastMessage;
-};
+}; 
 
 
 function Friends() {
   const[friendlist,setfriendlist]=useState<ClientFriend[]>([]);
-  const[loading,setloading]=useState(false);
+  const[loading,setloading]=useState(true);
   const{curruser}=useCurrUser();
   const[opensnap,setopensnap]=useState<ClientFriend | null>(null);
  function openSnap(val: ClientFriend) {
@@ -178,6 +178,12 @@ function formatTime(date?: string) {
      }
      fetchfriends();
   },[curruser])
+
+  const sortedfriends =[...friendlist].sort((a,b)=>{
+    const timeA=a.lastmsg?new Date(a.lastmsg.isopened?a.lastmsg.updatedAt:a.lastmsg.createdAt).getTime():0;
+    const timeB=b.lastmsg?new Date(b.lastmsg.isopened?b.lastmsg.updatedAt:b.lastmsg.createdAt).getTime():0;
+    return timeB-timeA
+  })
   return (
     <div className="flex justify-center w-full h-screen text-white">
       <div className="w-full max-w-[420px] h-full flex flex-col bg-black">
@@ -220,7 +226,7 @@ function formatTime(date?: string) {
 
 
 
-  {friendlist?.map((val,index) => (
+  {sortedfriends?.map((val,index) => (
     <motion.div
   key={val.id}
   initial={{ opacity: 0, y: 6 }}

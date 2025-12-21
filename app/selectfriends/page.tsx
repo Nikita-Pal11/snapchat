@@ -30,6 +30,8 @@ export default function Page() {
     const[loading,setloading]=useState(false);
     const {curruser}=useCurrUser()
     const [snap, setSnap] = useState<string | null>(null);
+    const[searchuser,setsearchuser]=useState("");
+    const[sending,setsending]=useState(false);
     const router=useRouter()
 useEffect(() => {
   setSnap(sessionStorage.getItem("snap_preview"));
@@ -47,40 +49,54 @@ useEffect(() => {
 
   return new File([u8arr], filename, { type: mime });
 }
+async function handleSnap() {
+  if (!snap || selectedFriends.length === 0 || !curruser) return;
 
-      async function handleSnap() {
- if (!snap || selectedFriends.length === 0 || !curruser) return;
+  try {
+    setsending(true);
 
-  // convert base64 → File
-  const file = base64ToFile(snap, "snap.jpg");
+    if (!socket.connected) socket.connect();
 
-  const formData = new FormData();
-  formData.append("file", file);
+    const file = base64ToFile(snap, "snap.jpg");
+    const formData = new FormData();
+    formData.append("file", file);
 
-  const resp = await fetch("/api/uploadfile", {
-    method: "POST",
-    body: formData,
-  });
+    const resp = await fetch("/api/uploadfile", {
+      method: "POST",
+      body: formData,
+    });
 
-  const { url } = await resp.json();
+    if (!resp.ok) throw new Error("Upload failed");
 
-socket.emit("sent_multi_snap",{
-    senderid:curruser?.id,
-    receiversid:selectedFriends,
-    mediaurl:url,
-    type:"SNAP"
-})
-socket.emit("sent_multi_notification",{
-    senderid:curruser?.id,
-    receiversid:selectedFriends,
-    type:"SNAP",
-    message:"Send a Snap"
-})
+    const { url } = await resp.json();
 
-    
-sessionStorage.removeItem("snap_preview")
-  
+    socket.emit("sent_multi_snap", {
+      senderid: curruser.id,
+      receiversid: selectedFriends,
+      mediaurl: url,
+      type: "SNAP",
+    });
+
+    socket.emit("sent_multi_notification", {
+      senderid: curruser.id,
+      receiversid: selectedFriends,
+      type: "SNAP",
+      message: "Sent a Snap",
+    });
+
+    sessionStorage.removeItem("snap_preview");
+
+    // 👇 ensure "Sending…" is visible
+    await new Promise((r) => setTimeout(r, 600));
+
+    router.push("/");
+  } catch (err) {
+    console.error(err);
+  } finally {
+    setsending(false);
   }
+}
+
     useEffect(()=>{
     if(!curruser)return;
      async function fetchfriends(){
@@ -101,6 +117,11 @@ sessionStorage.removeItem("snap_preview")
      }
      fetchfriends();
   },[curruser])
+
+const filteredFriends = friends.filter((val) =>
+  val.friend.name?.toLowerCase().includes(searchuser.toLowerCase())
+);
+
   return (
     <div className="flex justify-center w-full h-screen text-white">
       <div className="w-full max-w-[420px] h-full bg-black flex flex-col">
@@ -118,13 +139,15 @@ sessionStorage.removeItem("snap_preview")
             <input
               placeholder="Search"
               className="bg-transparent outline-none text-sm flex-1"
+              value={searchuser}
+              onChange={(e)=>setsearchuser(e.target.value)}
             />
           </div>
         </div>
 
         {/* FRIENDS LIST */}
         <div className="flex-1 overflow-y-auto px-2">
-  {friends.map((val, i) => {
+  {filteredFriends.map((val, i) => {
     const isselected=selectedFriends.includes(val.friend.id);
     return (
       <div
@@ -181,10 +204,28 @@ sessionStorage.removeItem("snap_preview")
 
         {/* SEND BUTTON */}
         <div className="p-4">
-          <button className="w-full bg-[#FFFC00] text-black py-3 rounded-full font-semibold text-sm" onClick={handleSnap}
-  disabled={selectedFriends.length === 0}>
-            Send
-          </button>
+          <button
+  disabled={sending || selectedFriends.length === 0}
+  onClick={handleSnap}
+  className={`w-full py-3 rounded-full font-semibold text-sm flex items-center justify-center gap-2
+    ${
+      sending || selectedFriends.length === 0
+        ? "bg-yellow-200 text-black/50"
+        : "bg-[#FFFC00] text-black"
+    }
+  `}
+>
+  {sending ? (
+    <>
+      <span className="w-4 h-4 border-2 border-black/30 border-t-black rounded-full animate-spin" />
+      Sending…
+    </>
+  ) : (
+    "Send"
+  )}
+</button>
+
+
         </div>
       </div>
     </div>

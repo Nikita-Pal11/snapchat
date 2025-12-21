@@ -15,3 +15,9 @@ mutation ReadNotification($readNotificationId: String!) {
   readNotification(id: $readNotificationId)
 }
 `
+
+export const DELETE_NOTIF=gql`
+mutation DeleteNotification($id:String!){
+  deleteNotification(id:$id)
+}
+`

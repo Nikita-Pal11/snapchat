@@ -6,14 +6,6 @@ import { FETCH_NOTIFICATION, GET_USER } from "@/service/gql/queries";
 import { useUser } from "@clerk/nextjs"
 
 import { createContext, ReactNode, useContext, useEffect, useState } from "react";
-type UserContextType={
-     curruser: any | null
-  loading: boolean
-  notifications: ClientNotification[]
-  notificationlength: number
-  setnotificationlength: React.Dispatch<React.SetStateAction<number>>
-  readNotify: (id: string, opened: boolean) => Promise<void>
-}
 type ClientUser = {
   id: string
   clerkId:string
@@ -30,12 +22,23 @@ type ClientNotification = {
   createdAt: string | Date
   sender: ClientUser
 }
+type UserContextType={
+     curruser: any | null
+  loading: boolean
+  notifications: ClientNotification[]
+  notificationlength: number
+  setnotificationlength: React.Dispatch<React.SetStateAction<number>>
+  setNotifications:React.Dispatch<React.SetStateAction<ClientNotification[]>>
+  readNotify: (id: string, opened: boolean) => Promise<void>
+}
+
 const usercontext=createContext<UserContextType>({
     curruser: null,
   loading: true,
   notifications: [],
   notificationlength: 0,
   setnotificationlength: () => {},
+  setNotifications:()=>{},
   readNotify: async () => {}
 });
 export function UserContext({children}:{children:ReactNode}) {
@@ -125,7 +128,7 @@ fetchNotify();
 
   return (
    
-      <usercontext.Provider value={{curruser,loading,notificationlength,setnotificationlength,notifications,readNotify}}>
+      <usercontext.Provider value={{curruser,loading,notificationlength,setnotificationlength,notifications,readNotify,setNotifications}}>
         {children}
       </usercontext.Provider>
 

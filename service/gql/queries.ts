@@ -97,6 +97,7 @@ query Fetchnotification($userId: String!) {
       name
       avatar
       id
+      clerkId
     }
     type
     createdAt

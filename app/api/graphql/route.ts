@@ -26,6 +26,7 @@ const typeDefs = gql`
   friendRequest(senderid:String!,receiverid:String!,status:String):Boolean
   AcceptRequest(requestid:String!):Boolean
   readNotification(id:String!):Boolean
+  deleteNotification(id:String!):Boolean
   }
   type notification{
   id:String
@@ -231,6 +232,14 @@ const resolvers = {
             }
         })
         return true;
+    },
+    deleteNotification:async (_:unknown,args:ReadNotificationArgs)=>{
+         await prismaclient.notifications.delete({
+          where:{
+            id:args.id
+          }
+         })
+         return true;
     },
     AcceptRequest: async (_:unknown, args: AcceptRequestArgs)=>{
        const request=await prismaclient.requestTable.findUnique({
