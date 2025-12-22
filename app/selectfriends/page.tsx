@@ -86,7 +86,6 @@ async function handleSnap() {
 
     sessionStorage.removeItem("snap_preview");
 
-    // 👇 ensure "Sending…" is visible
     await new Promise((r) => setTimeout(r, 600));
 
     router.push("/");

@@ -72,7 +72,15 @@ export default function NotificationsPage() {
                   className={`flex-1 relative flex items-center gap-3 px-2 py-3 cursor-pointer ${
                     !val.isopened ? 'bg-zinc-800/60' : ''
                   }`}
-                  onClick={() => readNotify(val.id, val.isopened)}
+                  onClick={() => {
+                    if(val.type=="CHAT" || val.type=="SNAP"){
+                      router.push(`Chat/${val.sender.clerkId}`)
+                    }
+                    if(val.type=="FRIEND_REQUEST"){
+                      router.push("/requests")
+                    }
+                    readNotify(val.id, val.isopened)
+                  }}
                 >
                   {!val.isopened && (
                     <div className="absolute left-0 top-0 h-full w-[3px] bg-yellow-400 rounded-r-sm" />

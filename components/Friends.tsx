@@ -109,10 +109,10 @@ useEffect(()=>{
     isopened: resp.isopened,
     mediaurl: resp.mediaurl,
      createdAt: resp.createdAt,
-  updatedAt: resp.updatedAt,
+  updatedAt: new Date().toISOString()
     }
-     setfriendlist((prev) =>
-      prev?.map((val) => {
+     setfriendlist((prev) =>{
+     const updated= prev?.map((val) => {
         const isThisFriend =
              val.friend.id === resp.senderid ||
         val.friend.id === resp.receiverid;
@@ -124,6 +124,13 @@ useEffect(()=>{
           lastmsg,
         };
       })
+      return [...updated].sort((a,b)=>{
+    const timeA=a.lastmsg?new Date(a.lastmsg.updatedAt||a.lastmsg.createdAt).getTime():0;
+    const timeB=b.lastmsg?new Date(b.lastmsg.updatedAt||b.lastmsg.createdAt).getTime():0;
+    return timeB-timeA
+  })
+    
+    }
     );
   })
   return () => {
@@ -167,7 +174,17 @@ function formatTime(date?: string) {
           userId:curruser.id
         })
         console.log(resp.friendsList);
-        setfriendlist(resp.friendsList || []);
+        const sorted = [...(resp.friendsList || [])].sort((a, b) => {
+  const timeA = a.lastmsg
+    ? new Date(a.lastmsg.updatedAt || a.lastmsg.createdAt).getTime()
+    : 0;
+  const timeB = b.lastmsg
+    ? new Date(b.lastmsg.updatedAt || b.lastmsg.createdAt).getTime()
+    : 0;
+  return timeB - timeA;
+});
+
+setfriendlist(sorted);
       }
       catch(err){
         console.log(err);
@@ -179,11 +196,6 @@ function formatTime(date?: string) {
      fetchfriends();
   },[curruser])
 
-  const sortedfriends =[...friendlist].sort((a,b)=>{
-    const timeA=a.lastmsg?new Date(a.lastmsg.isopened?a.lastmsg.updatedAt:a.lastmsg.createdAt).getTime():0;
-    const timeB=b.lastmsg?new Date(b.lastmsg.isopened?b.lastmsg.updatedAt:b.lastmsg.createdAt).getTime():0;
-    return timeB-timeA
-  })
   return (
     <div className="flex justify-center w-full h-screen text-white">
       <div className="w-full max-w-[420px] h-full flex flex-col bg-black">
@@ -226,7 +238,7 @@ function formatTime(date?: string) {
 
 
 
-  {sortedfriends?.map((val,index) => (
+  {friendlist?.map((val,index) => (
     <motion.div
   key={val.id}
   initial={{ opacity: 0, y: 6 }}
@@ -301,9 +313,7 @@ function formatTime(date?: string) {
       {val.lastmsg && (
         <span>
           . {formatTime(
-            val.lastmsg.isopened
-              ? val.lastmsg.updatedAt
-              : val.lastmsg.createdAt
+           val.lastmsg.updatedAt||val.lastmsg.createdAt
           )}
         </span>
       )}

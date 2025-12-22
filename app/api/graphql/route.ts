@@ -123,10 +123,25 @@ const resolvers = {
                   userId:args.id
                 }
               }
-            }}
+            }},
+            {
+              receivedRequests:{
+                none:{
+                  senderid:args.id
+                }
+              }
+            },
+            {
+              sentRequests:{
+                none:{
+                  receiverid:args.id
+                }
+              }
+            }
           ]
         }
       })
+
    },
     friendsList: async (_:unknown,args: FriendsListArgs)=>{
         const friends= await prismaclient.friends.findMany({
