@@ -155,7 +155,7 @@ const resolvers = {
             }
         })
         const resp=await Promise.all(
-            friends.map(async (f)=>{
+            friends.map(async (f: any)=>{
                 const lastmsg=await prismaclient.messages.findFirst({
                     where:{
                         OR:[
