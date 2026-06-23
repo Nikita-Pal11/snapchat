@@ -36,10 +36,12 @@ model Friends{
   userId String @db.ObjectId
   friendId String @db.ObjectId
   streaks Int @default(0)
-  lastsnapat DateTime?
+  // Per-side snap timestamps for correct mutual-streak tracking
+  userLastSnap   DateTime?   // when userId last snapped friendId
+  friendLastSnap DateTime?   // when friendId last snapped userId
   createdAt DateTime @default(now())
   
- user   User @relation("User_Friends_asOwner",  fields: [userId],   references: [id])
+  user   User @relation("User_Friends_asOwner",  fields: [userId],   references: [id])
   friend User @relation("User_Friends_asFriend", fields: [friendId], references: [id])
   @@unique([userId, friendId])
 }

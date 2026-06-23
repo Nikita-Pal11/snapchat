@@ -3,14 +3,24 @@
 
 @custom-variant dark (&:is(.dark *));
 
-/* Hide scrollbar but keep scrolling */
+/* Hide scrollbar but keep scrolling — all elements */
+*::-webkit-scrollbar {
+  display: none;
+}
+
+* {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+/* Legacy class kept for compatibility */
 .no-scrollbar::-webkit-scrollbar {
   display: none;
 }
 
 .no-scrollbar {
-  -ms-overflow-style: none;  /* IE & Edge */
-  scrollbar-width: none;     /* Firefox */
+  -ms-overflow-style: none;
+  scrollbar-width: none;
 }
 
 

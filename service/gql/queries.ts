@@ -45,6 +45,7 @@ query FriendsList($userId: String!) {
   friendsList(userId: $userId) {
     streaks
     id
+    createdAt
     friend {
       id
       avatar

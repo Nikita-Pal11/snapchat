@@ -1,11 +1,12 @@
 'use client'
-import { SignedIn, UserButton } from "@clerk/nextjs";
+import { SignedIn, UserButton, useUser } from "@clerk/nextjs";
 import { Search, UserRoundPlus, BellRing } from "lucide-react";
 import Link from "next/link";
 import { useCurrUser } from "./UserContext";
 
 function Navbar() {
-  const { curruser, notificationlength } = useCurrUser();
+  const { curruser, notificationlength, logoutGuest } = useCurrUser();
+  const { isSignedIn } = useUser();
 
   return (
     <div className="w-full max-w-[420px] mx-auto bg-black relative z-10">
@@ -15,9 +16,30 @@ function Navbar() {
       ">
         {/* User */}
         <div>
-          <SignedIn>
-            <UserButton />
-          </SignedIn>
+          {isSignedIn ? (
+            <SignedIn>
+              <UserButton />
+            </SignedIn>
+          ) : (
+            curruser && (
+              <button
+                onClick={() => {
+                  const confirmLogout = window.confirm("You are logged in as a Guest. Would you like to exit guest mode?");
+                  if (confirmLogout) {
+                    logoutGuest();
+                  }
+                }}
+                title="Guest Profile - Click to Exit Guest Mode"
+                className="w-8 h-8 rounded-full overflow-hidden border-2 border-yellow-400 hover:scale-105 active:scale-95 transition-all flex items-center justify-center bg-gray-800"
+              >
+                <img
+                  src={curruser.avatar || "/avatar.png"}
+                  alt={curruser.name || "Guest"}
+                  className="w-full h-full object-cover"
+                />
+              </button>
+            )
+          )}
         </div>
 
         {/* Search */}

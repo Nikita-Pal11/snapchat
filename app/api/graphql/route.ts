@@ -27,6 +27,7 @@ const typeDefs = gql`
   AcceptRequest(requestid:String!):Boolean
   readNotification(id:String!):Boolean
   deleteNotification(id:String!):Boolean
+  createGuestUser(name:String):User
   }
   type notification{
   id:String
@@ -63,6 +64,7 @@ const typeDefs = gql`
     type friendlist {
     id:String
     streaks:Int
+    createdAt:String
     friend:User
     lastmsg:messages
     }
@@ -169,6 +171,17 @@ const resolvers = {
                 }
             })
         )
+        // Sort server-side: friends with messages sorted by most recent,
+        // friends with no messages sorted by friendship createdAt (newest first)
+        resp.sort((a, b) => {
+            const timeA = a.lastmsg
+                ? new Date(a.lastmsg.updatedAt || a.lastmsg.createdAt).getTime()
+                : new Date(a.createdAt).getTime();
+            const timeB = b.lastmsg
+                ? new Date(b.lastmsg.updatedAt || b.lastmsg.createdAt).getTime()
+                : new Date(b.createdAt).getTime();
+            return timeB - timeA;
+        });
         return resp
     },
     finduser: async (_:unknown,args: FindUserArgs)=>{
@@ -295,7 +308,21 @@ const resolvers = {
   });
 
   return true; 
-}
+},
+    createGuestUser: async (_: unknown, args: { name?: string }) => {
+      const randomSuffix = Math.random().toString(36).substring(2, 8);
+      const guestClerkId = `guest_${randomSuffix}`;
+      const guestEmail = `guest_${randomSuffix}@guest.snapchat.com`;
+      const guestName = args.name || `Guest ${randomSuffix.toUpperCase()}`;
+      return await prismaclient.user.create({
+        data: {
+          clerkId: guestClerkId,
+          email: guestEmail,
+          name: guestName,
+          avatar: `https://api.dicebear.com/7.x/bottts/svg?seed=${guestClerkId}`
+        }
+      });
+    }
   }
 };
 

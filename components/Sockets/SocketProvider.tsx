@@ -2,7 +2,7 @@
 
 import UseSound from "@/app/hooks/UseSound";
 import socket from "@/app/services/socket";
-import { useUser } from "@clerk/nextjs";
+import { useCurrUser } from "@/components/UserContext";
 import { useEffect, useRef } from "react";
 import { toast } from "sonner";
 import { useRouter } from "next/navigation";
@@ -20,8 +20,8 @@ type SocketNotification = {
 }
 
 function SocketProvider() {
-  const { isSignedIn, user } = useUser();
- const connectedRef = useRef(false);
+  const { curruser } = useCurrUser();
+  const connectedRef = useRef(false);
   const playSound = UseSound();
   const router = useRouter();
   const snapStyle: Record<NotificationType, { title: string; color: string }> = {
@@ -107,25 +107,25 @@ function SocketProvider() {
     };
   }, [playSound]);
 
-  // CONNECT + USER ONLINE (AFTER LOGIN)
+  // CONNECT + USER ONLINE (AFTER LOGIN OR GUEST INITIALIZATION)
    useEffect(() => {
-    // 🟢 LOGIN
-    if (isSignedIn && user && !connectedRef.current) {
+    // 🟢 LOGIN / SESSION ACTIVE
+    if (curruser && !connectedRef.current) {
       socket.connect();
       connectedRef.current = true;
 
       socket.on("connect", () => {
-        socket.emit("user_connected", { userId: user.id });
+        socket.emit("user_connected", { userId: curruser.clerkId });
         console.log("connected:", socket.id);
       });
     }
 
-    // 🔴 LOGOUT
-    if (!isSignedIn && connectedRef.current) {
+    // 🔴 LOGOUT / NO SESSION
+    if (!curruser && connectedRef.current) {
       socket.disconnect();
       connectedRef.current = false;
     }
-  }, [isSignedIn, user?.id]);
+  }, [curruser]);
 
   return null;
 }

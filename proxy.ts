@@ -6,11 +6,14 @@ const isPublicRoute = createRouteMatcher(['/LandingPage','/sign-in','/sign-up','
 export default clerkMiddleware(async (auth, req) => {
   const { isAuthenticated } = await auth()
 
-  // Allow LandingPage to be public
+  // Allow LandingPage, sign-in, sign-up, and webhooks to be public
   if (isPublicRoute(req)) return NextResponse.next()
 
-  // Protect all other routes
-  if (!isAuthenticated) {
+  // Also check if they have a guest cookie session
+  const isGuest = req.cookies.has('snapchat_guest_clerk_id')
+
+  // Protect all other routes if they are neither authenticated nor a guest
+  if (!isAuthenticated && !isGuest) {
     const url = new URL('/LandingPage', req.url) // MUST be absolute
     return NextResponse.redirect(url)
   }

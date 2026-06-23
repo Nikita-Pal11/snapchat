@@ -21,3 +21,15 @@ mutation DeleteNotification($id:String!){
   deleteNotification(id:$id)
 }
 `
+
+export const CREATE_GUEST_USER=gql`
+mutation CreateGuestUser($name: String) {
+  createGuestUser(name: $name) {
+    id
+    clerkId
+    name
+    email
+    avatar
+  }
+}
+`

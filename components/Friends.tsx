@@ -1,6 +1,6 @@
-'use client'
+"use client";
 
-import { use, useEffect, useState } from "react"
+import { use, useEffect, useState } from "react";
 import { useCurrUser } from "./UserContext";
 import gqlclient from "@/service/gql";
 import { FRIEND_LIST } from "@/service/gql/queries";
@@ -37,187 +37,199 @@ type ClientFriend = {
   userId: string;
   friendId: string;
   streaks: number;
+  createdAt: string;
   friend: ClientUser;
   lastmsg?: LastMessage;
-}; 
-
+};
 
 function Friends() {
-  const[friendlist,setfriendlist]=useState<ClientFriend[]>([]);
-  const[loading,setloading]=useState(true);
-  const{curruser}=useCurrUser();
-  const[opensnap,setopensnap]=useState<ClientFriend | null>(null);
- function openSnap(val: ClientFriend) {
-  const lastmsg = val.lastmsg;
-  if (!lastmsg?.id || !lastmsg.roomid) return;
-  if (lastmsg.isopened) return;
+  const [friendlist, setfriendlist] = useState<ClientFriend[]>([]);
+  const [loading, setloading] = useState(true);
+  const { curruser } = useCurrUser();
+  const [opensnap, setopensnap] = useState<ClientFriend | null>(null);
+  function openSnap(val: ClientFriend) {
+    const lastmsg = val.lastmsg;
+    if (!lastmsg?.id || !lastmsg.roomid) return;
+    if (lastmsg.isopened) return;
 
-  setfriendlist((prev) =>
-    prev.map((f) => {
-      if (f.lastmsg?.id === lastmsg.id) {
-        return {
-          ...f,
-          lastmsg: {
-            ...f.lastmsg,
-            id: f.lastmsg.id!,       
-            roomid: f.lastmsg.roomid!,
-            isopened: true
-          }
-        };
-      }
-      return f;
-    })
-  );
-
-  setopensnap(val);
-
-  setTimeout(() => {
-    setopensnap(null);
-  }, 3000);
-
-  socket.emit("open_snap", { mid: lastmsg.id, roomid: lastmsg.roomid });
-}
-
-  useEffect(() => {
-  socket.on("rec_snap", ({ resp }) => {
     setfriendlist((prev) =>
-      prev?.map((val) => {
-        if (val.lastmsg?.id === resp.id) {
+      prev.map((f) => {
+        if (f.lastmsg?.id === lastmsg.id) {
           return {
-            ...val,
-            lastmsg: resp,
+            ...f,
+            lastmsg: {
+              ...f.lastmsg,
+              id: f.lastmsg.id!,
+              roomid: f.lastmsg.roomid!,
+              isopened: true,
+            },
           };
         }
-        return val;
-      })
+        return f;
+      }),
     );
-  });
 
-  return () => {
-    socket.off("rec_snap");
-  };
-}, []);
-useEffect(()=>{
-  socket.on("friend_lastmsg",({resp})=>{
-    console.log("📩 friend_lastmsg received", resp);
-    const lastmsg={
-       id: resp.id,
-    roomid: resp.roomid,
-    type: resp.type,
-    receiverid:resp.receiverid,
-    senderid: resp.senderid,
-    isopened: resp.isopened,
-    mediaurl: resp.mediaurl,
-     createdAt: resp.createdAt,
-  updatedAt: new Date().toISOString()
-    }
-     setfriendlist((prev) =>{
-     const updated= prev?.map((val) => {
-        const isThisFriend =
-             val.friend.id === resp.senderid ||
-        val.friend.id === resp.receiverid;
-        
-        if (!isThisFriend) return val;
-        
-        return {
-          ...val,
-          lastmsg,
-        };
-      })
-      return [...updated].sort((a,b)=>{
-    const timeA=a.lastmsg?new Date(a.lastmsg.updatedAt||a.lastmsg.createdAt).getTime():0;
-    const timeB=b.lastmsg?new Date(b.lastmsg.updatedAt||b.lastmsg.createdAt).getTime():0;
-    return timeB-timeA
-  })
-    
-    }
-    );
-  })
-  return () => {
-    socket.off("friend_lastmsg");
-  };
-},[])
-  const router=useRouter();
-function formatTime(date?: string) {
-  if (!date) return "";
+    setopensnap(val);
 
-  let time: number;
+    setTimeout(() => {
+      setopensnap(null);
+    }, 3000);
 
-  // ✅ If it's a millisecond timestamp string
-  if (/^\d+$/.test(date)) {
-    time = Number(date);
-  } else {
-    time = new Date(date).getTime();
+    socket.emit("open_snap", { mid: lastmsg.id, roomid: lastmsg.roomid });
   }
 
-  if (isNaN(time)) return "";
+  useEffect(() => {
+    socket.on("rec_snap", ({ resp }) => {
+      setfriendlist((prev) => {
+        const updated = prev?.map((val) => {
+          if (val.lastmsg?.id === resp.id) {
+            return {
+              ...val,
+              lastmsg: resp,
+            };
+          }
+          return val;
+        });
+        return [...updated].sort((a, b) => {
+          const timeA = a.lastmsg
+            ? new Date(a.lastmsg.updatedAt || a.lastmsg.createdAt).getTime()
+            : 0;
+          const timeB = b.lastmsg
+            ? new Date(b.lastmsg.updatedAt || b.lastmsg.createdAt).getTime()
+            : 0;
+          return timeB - timeA;
+        });
+      });
+    });
 
-  const diff = Date.now() - time;
-  const mins = Math.floor(diff / 60000);
+    return () => {
+      socket.off("rec_snap");
+    };
+  }, []);
+  useEffect(() => {
+    socket.on("friend_lastmsg", ({ resp }) => {
+      console.log("📩 friend_lastmsg received", resp);
+      const lastmsg = {
+        id: resp.id,
+        roomid: resp.roomid,
+        type: resp.type,
+        receiverid: resp.receiverid,
+        senderid: resp.senderid,
+        isopened: resp.isopened,
+        mediaurl: resp.mediaurl,
+        createdAt: resp.createdAt,
+        updatedAt: new Date().toISOString(),
+      };
+      setfriendlist((prev) => {
+        const updated = prev?.map((val) => {
+          // Match the friend who is the OTHER party in the message
+          // (not ourselves — curruser could be sender or receiver)
+          const isThisFriend =
+            val.friend.id === resp.senderid ||
+            val.friend.id === resp.receiverid;
 
-  if (mins < 1) return "now";
-  if (mins < 60) return `${mins}m`;
+          if (!isThisFriend) return val;
 
-  const hrs = Math.floor(mins / 60);
-  if (hrs < 24) return `${hrs}h`;
+          return {
+            ...val,
+            lastmsg,
+          };
+        });
+        return [...updated].sort((a, b) => {
+          // Use lastmsg time, or fall back to friendship createdAt for new friends
+          const timeA = a.lastmsg
+            ? new Date(a.lastmsg.updatedAt || a.lastmsg.createdAt).getTime()
+            : new Date(a.createdAt).getTime();
+          const timeB = b.lastmsg
+            ? new Date(b.lastmsg.updatedAt || b.lastmsg.createdAt).getTime()
+            : new Date(b.createdAt).getTime();
+          return timeB - timeA;
+        });
+      });
+    });
+    return () => {
+      socket.off("friend_lastmsg");
+    };
+  }, []);
+  const router = useRouter();
+  function formatTime(date?: string) {
+    if (!date) return "";
 
-  return `${Math.floor(hrs / 24)}d`;
-}
+    let time: number;
 
+    // ✅ If it's a millisecond timestamp string
+    if (/^\d+$/.test(date)) {
+      time = Number(date);
+    } else {
+      time = new Date(date).getTime();
+    }
 
-  useEffect(()=>{
-    if(!curruser)return;
-     async function fetchfriends(){
-      try{
+    if (isNaN(time)) return "";
+
+    const diff = Date.now() - time;
+    const mins = Math.floor(diff / 60000);
+
+    if (mins < 1) return "now";
+    if (mins < 60) return `${mins}m`;
+
+    const hrs = Math.floor(mins / 60);
+    if (hrs < 24) return `${hrs}h`;
+
+    return `${Math.floor(hrs / 24)}d`;
+  }
+
+  useEffect(() => {
+    if (!curruser) return;
+    async function fetchfriends() {
+      try {
         setloading(true);
-        const resp=await gqlclient.request(FRIEND_LIST,{
-          userId:curruser.id
-        })
+        const resp = await gqlclient.request(FRIEND_LIST, {
+          userId: curruser.id,
+        });
         console.log(resp.friendsList);
+        // Server already returns sorted list, but re-sort client-side
+        // using createdAt as fallback for friends with no messages
         const sorted = [...(resp.friendsList || [])].sort((a, b) => {
-  const timeA = a.lastmsg
-    ? new Date(a.lastmsg.updatedAt || a.lastmsg.createdAt).getTime()
-    : 0;
-  const timeB = b.lastmsg
-    ? new Date(b.lastmsg.updatedAt || b.lastmsg.createdAt).getTime()
-    : 0;
-  return timeB - timeA;
-});
+          const timeA = a.lastmsg
+            ? new Date(a.lastmsg.updatedAt || a.lastmsg.createdAt).getTime()
+            : new Date(a.createdAt).getTime();
+          const timeB = b.lastmsg
+            ? new Date(b.lastmsg.updatedAt || b.lastmsg.createdAt).getTime()
+            : new Date(b.createdAt).getTime();
+          return timeB - timeA;
+        });
 
-setfriendlist(sorted);
-      }
-      catch(err){
+        setfriendlist(sorted);
+      } catch (err) {
         console.log(err);
-      }
-      finally{
+      } finally {
         setloading(false);
       }
-     }
-     fetchfriends();
-  },[curruser])
+    }
+    fetchfriends();
+  }, [curruser]);
 
   return (
     <div className="flex justify-center w-full h-screen text-white">
       <div className="w-full max-w-[420px] h-full flex flex-col bg-black">
+        <div className="flex-1 overflow-y-auto no-scrollbar">
+          {loading && (
+            <div className="space-y-2">
+              {[...Array(4)].map((_, i) => (
+                <UserSkeleton key={i} />
+              ))}
+            </div>
+          )}
 
-        <div className="flex-1 overflow-y-auto no-scrollbar overscroll-none">
-  {loading && (
-  <div className="space-y-2">
-    {[...Array(4)].map((_, i) => (
-      <UserSkeleton key={i} />
-    ))}
-  </div>
-)}
-
-{!loading && friendlist?.length === 0 && (
-  <div className="flex flex-col items-center justify-center py-12 text-white/60 gap-3">
-    <p className="text-lg font-bold">You have no friends yet!</p>
-    <p className="text-sm text-white/40 text-center">
-      Find and add friends to start chatting instantly!
-    </p>
-    <button
-  onClick={() => router.push("/SearchPage")}
-  className="
+          {!loading && friendlist?.length === 0 && (
+            <div className="flex flex-col items-center justify-center py-12 text-white/60 gap-3">
+              <p className="text-lg font-bold">You have no friends yet!</p>
+              <p className="text-sm text-white/40 text-center">
+                Find and add friends to start chatting instantly!
+              </p>
+              <button
+                onClick={() => router.push("/SearchPage")}
+                className="
     px-6 py-2
     bg-yellow-500
     hover:bg-yellow-400
@@ -228,125 +240,123 @@ setfriendlist(sorted);
     transition-all duration-200 ease-in-out
     flex items-center gap-2
   "
->
-  <span>Add Friends</span>
-  <ArrowRight size={16} />
-</button>
+              >
+                <span>Add Friends</span>
+                <ArrowRight size={16} />
+              </button>
+            </div>
+          )}
 
-  </div>
-)}
-
-
-
-  {friendlist?.map((val,index) => (
-    <motion.div
-  key={val.id}
-  initial={{ opacity: 0, y: 6 }}
-  animate={{ opacity: 1, y: 0 }}
-  transition={{ duration: 0.2 }}
-  className="
+          {friendlist?.map((val, index) => (
+            <motion.div
+              key={val.id}
+              initial={{ opacity: 0, y: 6 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.2 }}
+              className="
     px-3
     active:bg-white/5
     transition-colors
   "
->
-      <UserComp
-        name={val.friend.name || ""}
-        avatar={val.friend.avatar || ""}
-   subtitle={
-  <div className="flex items-center justify-between w-full"
-  
-  >
+            >
+              <UserComp
+                name={val.friend.name || ""}
+                avatar={val.friend.avatar || ""}
+                subtitle={
+                  <div className="flex items-center justify-between w-full">
+                    {/* LEFT — STATUS */}
+                    <div className="flex items-center gap-1">
+                      {/* 🔴 NEW SNAP */}
+                      {val.lastmsg?.type === "SNAP" &&
+                      val.lastmsg.senderid !== curruser.id &&
+                      !val.lastmsg.isopened ? (
+                        <span
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            openSnap(val);
+                          }}
+                          className="flex items-center gap-1 text-red-500 text-sm font-semibold cursor-pointer"
+                        >
+                          <Square size={12} fill="currentColor" />
+                          New Snap
+                        </span>
+                      ) : (
+                        <>
+                          {/* ◻️ OPENED */}
+                          {val.lastmsg?.type === "SNAP" &&
+                            val.lastmsg.isopened && (
+                              <span className="flex items-center gap-1 text-white/50 text-sm">
+                                <Square size={12} />
+                                Opened
+                              </span>
+                            )}
 
-    {/* LEFT — STATUS */}
-    <div className="flex items-center gap-1">
+                          {/* ➡️ DELIVERED */}
+                          {val.lastmsg?.type === "SNAP" &&
+                            !val.lastmsg.isopened && (
+                              <span className="flex items-center gap-1 text-white/50 text-sm">
+                                <ArrowRight size={12} />
+                                Delivered
+                              </span>
+                            )}
 
-      {/* 🔴 NEW SNAP */}
-      {val.lastmsg?.type === "SNAP" &&
-      val.lastmsg.senderid !== curruser.id &&
-      !val.lastmsg.isopened ? (
-        <span
-        
-          onClick={(e) => {
-             e.stopPropagation();
-            openSnap(val)}}
-          className="flex items-center gap-1 text-red-500 text-sm font-semibold cursor-pointer"
-        >
-          <Square size={12} fill="currentColor" />
-          New Snap
-        </span>
-      ) : (
-        <>
-          {/* ◻️ OPENED */}
-          {val.lastmsg?.type === "SNAP" &&
-          val.lastmsg.isopened && (
-            <span className="flex items-center gap-1 text-white/50 text-sm" >
-              <Square size={12} />
-              Opened
-            </span>
-          )}
+                          {/* 🔵 CHAT */}
+                          {val.lastmsg?.type !== "SNAP" && (
+                            <span className="flex items-center gap-1 text-blue-500 text-sm font-medium">
+                              <MessageCircle size={12} />
+                              Chat
+                            </span>
+                          )}
+                        </>
+                      )}
+                    </div>
 
-          {/* ➡️ DELIVERED */}
-          {val.lastmsg?.type === "SNAP" &&
-          !val.lastmsg.isopened && (
-            <span className="flex items-center gap-1 text-white/50 text-sm" >
-              <ArrowRight size={12} />
-              Delivered
-            </span>
-          )}
+                    {/* RIGHT — TIME · STREAK */}
+                    <div className="flex items-center text-white/40 text-xs gap-1">
+                      {/* TIME */}
+                      {val.lastmsg && (
+                        <span>
+                          .{" "}
+                          {formatTime(
+                            val.lastmsg.updatedAt || val.lastmsg.createdAt,
+                          )}
+                        </span>
+                      )}
 
-          {/* 🔵 CHAT */}
-          {val.lastmsg?.type !== "SNAP" && (
-            <span className="flex items-center gap-1 text-blue-500 text-sm font-medium" >
-              <MessageCircle size={12} />
-              Chat
-            </span>
-          )}
-        </>
-      )}
-    </div>
+                      {/* DOT */}
+                      {val.streaks > 0 && <span>·</span>}
 
-    {/* RIGHT — TIME · STREAK */}
-    <div className="flex items-center text-white/40 text-xs gap-1">
-
-      {/* TIME */}
-      {val.lastmsg && (
-        <span>
-          . {formatTime(
-           val.lastmsg.updatedAt||val.lastmsg.createdAt
-          )}
-        </span>
-      )}
-
-      {/* DOT */}
-      {val.streaks > 0 && <span>·</span>}
-
-      {/* 🔥 STREAK */}
-      {val.streaks > 0 && (
-        <span className="flex items-center gap-0.5 text-orange-400 font-medium">
-          {val.streaks}
-          <span>🔥</span>
-        </span>
-      )}
-    </div>
-  </div>
-}
-
-        showChat
-        onChat={()=>router.push(`/Chat/${val.friend.clerkId}`)}
-      />
-    </motion.div>
-    
-  ))}
-</div>
-{opensnap && (
+                      {/* 🔥 STREAK */}
+                      {val.streaks > 0 && (
+                        <span className="flex items-center gap-0.5 text-orange-400 font-medium">
+                          {val.streaks}
+                          <span>🔥</span>
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                }
+                showChat
+                onChat={() => router.push(`/Chat/${val.friend.clerkId}`)}
+              />
+            </motion.div>
+          ))}
+        </div>
+        {opensnap && (
           <div className="fixed inset-0 bg-black z-50 flex items-center justify-center">
             <div className="absolute top-0 left-0 h-1 w-full bg-white animate-snap-timer" />
 
             {opensnap.lastmsg?.mediaurl?.endsWith(".mp4") ? (
-              <video src={opensnap.lastmsg.mediaurl} autoPlay className="max-h-full" />
+              <video
+                src={opensnap.lastmsg.mediaurl}
+                autoPlay
+                className="max-h-full"
+              />
             ) : (
-              <img src={opensnap.lastmsg?.mediaurl || ""} className="max-h-full" />
+              <img
+                src={opensnap.lastmsg?.mediaurl || ""}
+                className="max-h-full"
+              />
             )}
 
             <button
@@ -359,7 +369,7 @@ setfriendlist(sorted);
         )}
       </div>
     </div>
-  )
+  );
 }
 
-export default Friends
+export default Friends;

@@ -24,56 +24,115 @@ const onlineusers = {};
    🔹 Utility Functions
 ================================ */
 
-function isSameDay(d1, d2) {
+// Always compare dates in UTC to avoid timezone-related day boundary bugs
+function isSameDayUTC(d1, d2) {
   const a = new Date(d1);
   const b = new Date(d2);
   return (
-    a.getFullYear() === b.getFullYear() &&
-    a.getMonth() === b.getMonth() &&
-    a.getDate() === b.getDate()
+    a.getUTCFullYear() === b.getUTCFullYear() &&
+    a.getUTCMonth()   === b.getUTCMonth()    &&
+    a.getUTCDate()    === b.getUTCDate()
   );
 }
 
 async function handlesnap(senderid, receiverid) {
-  const friendships = await prismaclient.friends.findMany({
-    where: {
-      OR: [
-        { userId: senderid, friendId: receiverid },
-        { userId: receiverid, friendId: senderid }
-      ]
-    }
+  const now = new Date();
+
+  // Find the canonical friendship row where userId=sender, friendId=receiver
+  // (there are always 2 rows per pair, one per direction)
+  const row = await prismaclient.friends.findUnique({
+    where: { userId_friendId: { userId: senderid, friendId: receiverid } }
   });
 
-  if (friendships.length === 0) return;
+  const mirror = await prismaclient.friends.findUnique({
+    where: { userId_friendId: { userId: receiverid, friendId: senderid } }
+  });
 
-  const now = new Date();
+  if (!row || !mirror) return;
+
+  // --- Step 1: Mark that the sender snapped today (on the row where sender=userId) ---
+  // userLastSnap  = when this row's userId last snapped
+  // friendLastSnap = when this row's friendId last snapped
+  // On the sender's row, update userLastSnap; on the mirror row, update friendLastSnap
+
+  const senderAlreadySnappedToday = row.userLastSnap && isSameDayUTC(row.userLastSnap, now);
+
+  if (!senderAlreadySnappedToday) {
+    // Record that the sender snapped today on their row
+    await prismaclient.friends.update({
+      where: { id: row.id },
+      data: { userLastSnap: now }
+    });
+    // Also mirror: the sender is the "friend" on the mirror row
+    await prismaclient.friends.update({
+      where: { id: mirror.id },
+      data: { friendLastSnap: now }
+    });
+  }
+
+  // --- Step 2: Check if the OTHER user (receiver) has ALSO snapped today ---
+  // On row (userId=sender), friendLastSnap = when receiver last snapped
+  // We need a fresh copy since we may have just updated things
+  const freshRow = await prismaclient.friends.findUnique({
+    where: { userId_friendId: { userId: senderid, friendId: receiverid } }
+  });
+
+  const receiverSnappedToday = freshRow.friendLastSnap && isSameDayUTC(freshRow.friendLastSnap, now);
+  const senderSnappedToday   = freshRow.userLastSnap   && isSameDayUTC(freshRow.userLastSnap,   now);
+
+  // Only proceed with streak logic if BOTH have snapped today
+  if (!senderSnappedToday || !receiverSnappedToday) return;
+
+  // --- Step 3: Streak increment — once per day, on both rows ---
+  // We use the row's current streak to decide what to do.
+  // To avoid double-incrementing (both snaps arriving close together),
+  // only increment if neither row has already been incremented today.
+  // We detect this by checking if the streak was last updated today.
+
   const yesterday = new Date(now);
-  yesterday.setDate(now.getDate() - 1);
+  yesterday.setUTCDate(now.getUTCDate() - 1);
 
-  for (const f of friendships) {
-    const last = f.lastsnapat ? new Date(f.lastsnapat) : null;
+  for (const f of [freshRow, mirror]) {
+    // senderSnap on this row: f.userLastSnap
+    // Streak should only be touched once: if the last time we touched it
+    // was NOT today, we know we haven't incremented yet today.
+    const alreadyIncrementedToday =
+      f.userLastSnap && f.friendLastSnap &&
+      isSameDayUTC(f.userLastSnap, now) &&
+      isSameDayUTC(f.friendLastSnap, now) &&
+      // heuristic: if both snaps landed today and streak is already > 0 and
+      // createdAt is today → we already incremented this pair today
+      // Better: use a dedicated streakUpdatedAt field, but we approximate
+      // by only letting the FIRST call through. We handle this by updating
+      // row first and checking optimistically.
+      false; // allow both rows to update; duplicate-guard below via upsert logic
 
-    if (last && isSameDay(last, now)) {
-      await prismaclient.friends.update({
-        where: { id: f.id },
-        data: { lastsnapat: now }
-      });
-    } else if (last && isSameDay(last, yesterday)) {
-      await prismaclient.friends.update({
-        where: { id: f.id },
-        data: {
-          streaks: { increment: 1 },
-          lastsnapat: now
-        }
-      });
-    } else {
-      await prismaclient.friends.update({
-        where: { id: f.id },
-        data: {
-          streaks: 1,
-          lastsnapat: now
-        }
-      });
+    const prevSenderSnap = f === freshRow ? row.userLastSnap : mirror.friendLastSnap;
+
+    if (prevSenderSnap && isSameDayUTC(prevSenderSnap, now)) {
+      // Sender already snapped today before this call — skip streak on this row
+      // (streak was already handled on a previous snap today)
+      continue;
+    }
+
+    // Check if last time either side snapped was yesterday → continue streak
+    const senderWasYesterday = f.userLastSnap && isSameDayUTC(f.userLastSnap, yesterday);
+    const friendWasYesterday = f.friendLastSnap && isSameDayUTC(f.friendLastSnap, yesterday);
+
+    if (senderWasYesterday || friendWasYesterday || f.streaks === 0) {
+      if (f.streaks >= 1 && !senderWasYesterday && !friendWasYesterday) {
+        // Streak broken — reset to 0, will reach 1 after mutual snap
+        await prismaclient.friends.update({
+          where: { id: f.id },
+          data: { streaks: 0 }
+        });
+      } else {
+        // Continue or start streak
+        await prismaclient.friends.update({
+          where: { id: f.id },
+          data: { streaks: { increment: 1 } }
+        });
+      }
     }
   }
 }
@@ -134,11 +193,23 @@ io.on("connection", (socket) => {
 
     if (!receiver) return;
 
+    // Notify the receiver's friends list
     const friendSocketId = onlineusers[receiver.clerkId];
-    console.log("📤 emitting friend_lastmsg to", friendSocketId);
-
+    console.log("📤 emitting friend_lastmsg to receiver", friendSocketId);
     if (friendSocketId) {
       io.to(friendSocketId).emit("friend_lastmsg", { resp });
+    }
+
+    // Also notify the sender's friends list so it re-sorts on their end
+    const sender = await prismaclient.user.findUnique({
+      where: { id: msg.senderid },
+      select: { clerkId: true },
+    });
+    if (sender) {
+      const senderSocketId = onlineusers[sender.clerkId];
+      if (senderSocketId) {
+        io.to(senderSocketId).emit("friend_lastmsg", { resp });
+      }
     }
 
     if (msg.type == "SNAP") {

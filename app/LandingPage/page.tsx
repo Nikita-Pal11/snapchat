@@ -91,6 +91,20 @@ export default function Page() {
                   Create Account
                 </motion.button>
               </SignUpButton>
+
+              <motion.button
+                whileTap={{ scale: 0.95 }}
+                whileHover={{ scale: 1.03 }}
+                onClick={() => {
+                  const expires = new Date();
+                  expires.setTime(expires.getTime() + 1 * 60 * 60 * 1000); // 1 hour bypass
+                  document.cookie = `snapchat_guest_clerk_id=pending;expires=${expires.toUTCString()};path=/`;
+                  router.push("/");
+                }}
+                className="mt-2 bg-transparent text-black hover:text-black/75 rounded-full font-bold text-base py-2 border-2 border-black/40"
+              >
+                Continue as Guest
+              </motion.button>
             </SignedOut>
           </motion.div>
 
