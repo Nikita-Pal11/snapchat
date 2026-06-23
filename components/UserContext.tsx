@@ -44,7 +44,7 @@ const usercontext=createContext<UserContextType>({
   logoutGuest: () => {}
 });
 export function UserContext({children}:{children:ReactNode}) {
-    const {user}=useUser();
+    const {user, isLoaded}=useUser();
     const [curruser, setcurruser] = useState<ClientUser | null>(null);
 
     const[loading,setLoading]=useState(true);
@@ -119,6 +119,10 @@ fetchNotify();
 
   useEffect(() => {
     async function initUser() {
+      // Wait for Clerk to finish loading — user is undefined while loading,
+      // which would falsely trigger guest creation on every normal login.
+      if (!isLoaded) return;
+
       // 1. If Clerk user is signed in
       if (user?.id) {
         // Clear any leftover guest cookies/localstorage
@@ -155,7 +159,8 @@ fetchNotify();
 
       const storedGuestClerkId = localStorage.getItem("snapchat_guest_clerk_id");
 
-      if (storedGuestClerkId) {
+      if (storedGuestClerkId && storedGuestClerkId !== "pending") {
+        // Restore existing guest session
         try {
           setLoading(true);
           const resp = await gqlclient.request(GET_USER, {
@@ -173,9 +178,14 @@ fetchNotify();
         } finally {
           setLoading(false);
         }
-      } else {
-        // No guest session, create new guest
+      } else if (storedGuestClerkId === "pending") {
+        // User explicitly clicked "Continue as Guest" on LandingPage
+        localStorage.removeItem("snapchat_guest_clerk_id");
         await createNewGuest();
+      } else {
+        // No guest session and user did NOT choose guest mode — just stop loading.
+        // Do NOT auto-create a guest. They will be redirected by middleware.
+        setLoading(false);
       }
     }
 
@@ -201,7 +211,7 @@ fetchNotify();
     }
 
     initUser();
-  }, [user]);
+  }, [user, isLoaded]);
 
   return (
    
