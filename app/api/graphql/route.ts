@@ -213,9 +213,9 @@ const resolvers = {
       },
     },
        })
-       return users.map(u => ({
+       return users.map((u: any) => ({
     ...u,
-    isFriend: u.friends.some(f => f.friendId === args.userid),
+    isFriend: u.friends.some((f: any) => f.friendId === args.userid),
     requestSent: u.receivedRequests.length > 0,
     requestReceived: u.sentRequests.length > 0,
   }));
