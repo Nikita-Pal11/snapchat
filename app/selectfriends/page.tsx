@@ -56,11 +56,6 @@ async function handleSnap() {
     setsending(true);
 
     // Wait for socket to be fully connected before emitting
-    // await new Promise<void>((resolve) => {
-    //   if (socket.connected) return resolve();
-    //   socket.connect();
-    //   socket.once("connect", resolve);
-    // });
 
     const file = base64ToFile(snap, "snap.jpg");
     const formData = new FormData();
@@ -74,6 +69,12 @@ async function handleSnap() {
     if (!resp.ok) throw new Error("Upload failed");
 
     const { url } = await resp.json();
+
+        await new Promise<void>((resolve) => {
+          if (socket.connected) return resolve();
+          socket.connect();
+          socket.once("connect", resolve);
+        });
 
     socket.emit("sent_multi_snap", {
       senderid: curruser.id,
