@@ -371,34 +371,41 @@ io.on("connection", (socket) => {
      🔸 sent_multi_snap
   ================================ */
   socket.on("sent_multi_snap", async ({ senderid, receiversid, mediaurl, type }) => {
-    for (const receiverid of receiversid) {
-      const roomid = [senderid, receiverid].sort().join("_");
+    console.log("sent_multi_snap received:", { senderid, receiversid, mediaurl, type });
+    try {
+      for (const receiverid of receiversid) {
+        const roomid = [senderid, receiverid].sort().join("_");
 
-      const resp = await prismaclient.messages.create({
-        data: {
-          senderid,
-          receiverid,
-          roomid,
-          mediaurl,
-          type,
-          isopened: false,
-          expiresAt: new Date(Date.now() + 10 * 1000),
-        },
-      });
+        const resp = await prismaclient.messages.create({
+          data: {
+            senderid,
+            receiverid,
+            roomid,
+            mediaurl,
+            type,
+            isopened: false,
+            expiresAt: new Date(Date.now() + 10 * 1000),
+          },
+        });
 
-      io.to(roomid).emit("rec_snap", { resp });
+        console.log("Message created:", resp.id);
 
-      const receiver = await prismaclient.user.findUnique({
-        where: { id: receiverid },
-        select: { clerkId: true },
-      });
+        io.to(roomid).emit("rec_snap", { resp });
 
-      const socketId = onlineusers[receiver?.clerkId];
-      if (socketId) {
-        io.to(socketId).emit("friend_lastmsg", { resp });
+        const receiver = await prismaclient.user.findUnique({
+          where: { id: receiverid },
+          select: { clerkId: true },
+        });
+
+        const socketId = onlineusers[receiver?.clerkId];
+        if (socketId) {
+          io.to(socketId).emit("friend_lastmsg", { resp });
+        }
+
+        await handlesnap(senderid, receiverid);
       }
-
-      await handlesnap(senderid, receiverid);
+    } catch (err) {
+      console.error("❌ sent_multi_snap error:", err);
     }
   });
 
