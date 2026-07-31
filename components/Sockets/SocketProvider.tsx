@@ -108,23 +108,41 @@ function SocketProvider() {
   }, [playSound]);
 
   // CONNECT + USER ONLINE (AFTER LOGIN OR GUEST INITIALIZATION)
-   useEffect(() => {
-    // 🟢 LOGIN / SESSION ACTIVE
-    if (curruser && !connectedRef.current) {
+  useEffect(() => {
+    if (!curruser) {
+      // 🔴 LOGOUT / NO SESSION — disconnect and reset
+      if (connectedRef.current) {
+        socket.disconnect();
+        connectedRef.current = false;
+      }
+      return;
+    }
+
+    // Emit user_connected on every (re)connect so the server always knows we're online
+    const handleConnect = () => {
+      socket.emit("user_connected", { userId: curruser.clerkId });
+      console.log("socket connected:", socket.id);
+    };
+
+    // When disconnected, reset ref so reconnect logic can fire again
+    const handleDisconnect = (reason: string) => {
+      console.log("socket disconnected:", reason);
+      connectedRef.current = false;
+    };
+
+    socket.on("connect", handleConnect);
+    socket.on("disconnect", handleDisconnect);
+
+    // 🟢 Connect if not already connected
+    if (!connectedRef.current) {
       socket.connect();
       connectedRef.current = true;
-
-      socket.on("connect", () => {
-        socket.emit("user_connected", { userId: curruser.clerkId });
-        console.log("connected:", socket.id);
-      });
     }
 
-    // 🔴 LOGOUT / NO SESSION
-    if (!curruser && connectedRef.current) {
-      socket.disconnect();
-      connectedRef.current = false;
-    }
+    return () => {
+      socket.off("connect", handleConnect);
+      socket.off("disconnect", handleDisconnect);
+    };
   }, [curruser]);
 
   return null;
