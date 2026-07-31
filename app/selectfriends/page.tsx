@@ -55,7 +55,12 @@ async function handleSnap() {
   try {
     setsending(true);
 
-    if (!socket.connected) socket.connect();
+    // Wait for socket to be fully connected before emitting
+    await new Promise<void>((resolve) => {
+      if (socket.connected) return resolve();
+      socket.connect();
+      socket.once("connect", resolve);
+    });
 
     const file = base64ToFile(snap, "snap.jpg");
     const formData = new FormData();
